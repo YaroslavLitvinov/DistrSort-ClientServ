@@ -1,0 +1,38 @@
+18:39:51. get_dbrecords_callback() nodename:dest, ftype=0, sock=-1, method=-1, endpoint=, fmode=r, fpath=/in/stdin, fd=0
+
+18:39:51. get_dbrecords_callback() nodename:dest, ftype=0, sock=-1, method=-1, endpoint=, fmode=w, fpath=/out/stdout, fd=1
+
+18:39:51. get_dbrecords_callback() nodename:dest, ftype=0, sock=-1, method=-1, endpoint=, fmode=w, fpath=/out/stderr, fd=2
+
+18:39:51. get_dbrecords_callback() nodename:dest, ftype=1, sock=4, method=0, endpoint=ipc:///tmp/zmq/ranges-9, fmode=r, fpath=/in/ranges, fd=3
+
+18:39:51. get_dbrecords_callback() nodename:dest, ftype=1, sock=4, method=0, endpoint=ipc:///tmp/zmq/ranges-9, fmode=w, fpath=/out/ranges, fd=4
+
+18:39:51. get_dbrecords_callback() nodename:dest, ftype=1, sock=8, method=1, endpoint=ipc:///tmp/zmq/sort-result, fmode=w, fpath=/out/sorted_range, fd=5
+
+18:39:51. main() get_all_records_from_dbtable err=0
+18:39:51. main() started server dest, nodeid=9
+18:39:52. zvm_getattr() getattr_path=/.Trash
+18:39:52. zvm_getattr() getattr_path=/.Trash-1000
+18:39:56. zvm_getattr() getattr_path=/in
+18:39:56. stat_printf() path=/in stat{ st_mode=0x41b6, st_ino=30529976 }
+18:39:56. zvm_getattr() getattr_path=/in/ranges
+18:39:56. stat_printf() path=/in/ranges stat{ st_mode=0x8124, st_ino=3 }
+18:39:56. zvm_open() zvm_open /in/ranges
+18:39:56. open_sockf() open socket: ipc:///tmp/zmq/ranges-9, sock type 4
+
+18:39:56. open_sockf() open socket: bind
+18:39:56. open_sockf() zmq_bind ok
+18:39:56. zvm_getattr() getattr_path=/out
+18:39:56. stat_printf() path=/out stat{ st_mode=0x41b6, st_ino=30530104 }
+18:39:56. zvm_getattr() getattr_path=/out/ranges
+18:39:56. stat_printf() path=/out/ranges stat{ st_mode=0x8092, st_ino=4 }
+18:39:56. zvm_open() zvm_open /out/ranges
+18:39:56. open_sockf() zvm_open use dual socket
+18:39:56. read_sockf() count=24
+18:39:56. read_sockf() zmq_recv 24 bytes...
+18:40:07. read_sockf() zmq_recv err -1, errno 4, status Interrupted system call
+18:40:07. zeromq_term() zmq_term trying...
+
+18:40:08. zeromq_term() zmq_term err -1, errno 4 errtext Interrupted system call
+

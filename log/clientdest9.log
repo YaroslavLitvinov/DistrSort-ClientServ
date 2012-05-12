@@ -1,0 +1,6 @@
+18:39:56. main() [9] Destination node started
+18:39:56. repreq_read_sorted_ranges() [9] Read ranges from /tmp/1/7/9/in/ranges
+
+18:39:56. repreq_read_sorted_ranges() [9] recv array -->
+18:40:07. repreq_read_sorted_ranges() r packet_data_t bytes=0
+18:40:07. repreq_read_sorted_ranges() asert t.type=46 2(EPACKET_RANGE)

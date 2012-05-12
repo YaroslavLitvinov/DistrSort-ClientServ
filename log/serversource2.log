@@ -1,0 +1,201 @@
+18:39:50. get_dbrecords_callback() nodename:source, ftype=0, sock=-1, method=-1, endpoint=, fmode=r, fpath=/in/stdin, fd=0
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=0, sock=-1, method=-1, endpoint=, fmode=w, fpath=/out/stdout, fd=1
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=0, sock=-1, method=-1, endpoint=, fmode=w, fpath=/out/stderr, fd=2
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=8, method=1, endpoint=ipc:///tmp/zmq/histograms, fmode=w, fpath=/out/histogram, fd=3
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=4, method=0, endpoint=ipc:///tmp/zmq/detailed-histogram-2, fmode=r, fpath=/in/detailed_histogram_request, fd=4
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=4, method=0, endpoint=ipc:///tmp/zmq/detailed-histogram-2, fmode=w, fpath=/out/detailed_histogram_reply, fd=5
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=7, method=0, endpoint=ipc:///tmp/zmq/range-request-2, fmode=r, fpath=/in/sequences_request, fd=6
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-7, fmode=w, fpath=/out/ranges0, fd=7
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-8, fmode=w, fpath=/out/ranges1, fd=8
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-9, fmode=w, fpath=/out/ranges2, fd=9
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-10, fmode=w, fpath=/out/ranges3, fd=10
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-11, fmode=w, fpath=/out/ranges4, fd=11
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-7, fmode=r, fpath=/in/ranges0, fd=12
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-8, fmode=r, fpath=/in/ranges1, fd=13
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-9, fmode=r, fpath=/in/ranges2, fd=14
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-10, fmode=r, fpath=/in/ranges3, fd=15
+
+18:39:50. get_dbrecords_callback() nodename:source, ftype=1, sock=3, method=1, endpoint=ipc:///tmp/zmq/ranges-11, fmode=r, fpath=/in/ranges4, fd=16
+
+18:39:50. main() get_all_records_from_dbtable err=0
+18:39:50. main() started server source, nodeid=2
+18:39:51. zvm_getattr() getattr_path=/.Trash
+18:39:51. zvm_getattr() getattr_path=/.Trash-1000
+18:39:54. zvm_getattr() getattr_path=/out
+18:39:54. stat_printf() path=/out stat{ st_mode=0x41b6, st_ino=17332792 }
+18:39:54. zvm_getattr() getattr_path=/out/histogram
+18:39:54. stat_printf() path=/out/histogram stat{ st_mode=0x8092, st_ino=3 }
+18:39:54. zvm_open() zvm_open /out/histogram
+18:39:54. open_sockf() open socket: ipc:///tmp/zmq/histograms, sock type 8
+
+18:39:54. open_sockf() open socket: connect
+18:39:54. open_sockf() zmq_connect ok
+18:39:54. zvm_write() path=/out/histogram, size=24, off_t=0
+18:39:54. write_sockf() zmq_sending buf 24 bytes...
+18:39:54. write_sockf() zmq_send ok
+18:39:54. zvm_write() path=/out/histogram, size=12000, off_t=24
+18:39:54. write_sockf() zmq_sending buf 12000 bytes...
+18:39:54. write_sockf() zmq_send ok
+18:39:54. close_sockf() zmq socket closing...
+18:39:54. close_sockf() zmq_close ok
+18:39:54. zvm_getattr() getattr_path=/in
+18:39:54. stat_printf() path=/in stat{ st_mode=0x41b6, st_ino=17332664 }
+18:39:54. zvm_getattr() getattr_path=/in/detailed_histogram_request
+18:39:54. stat_printf() path=/in/detailed_histogram_request stat{ st_mode=0x8124, st_ino=4 }
+18:39:54. zvm_open() zvm_open /in/detailed_histogram_request
+18:39:54. open_sockf() open socket: ipc:///tmp/zmq/detailed-histogram-2, sock type 4
+
+18:39:54. open_sockf() open socket: bind
+18:39:54. open_sockf() zmq_bind ok
+18:39:54. zvm_getattr() getattr_path=/out/detailed_histogram_reply
+18:39:54. stat_printf() path=/out/detailed_histogram_reply stat{ st_mode=0x8092, st_ino=5 }
+18:39:54. zvm_open() zvm_open /out/detailed_histogram_reply
+18:39:54. open_sockf() zvm_open use dual socket
+18:39:54. read_sockf() count=16
+18:39:54. read_sockf() zmq_recv 16 bytes...
+18:39:55. read_sockf() zmq_recv 16 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=1, off_t=0
+18:39:55. write_sockf() zmq_sending buf 1 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=4
+18:39:55. read_sockf() zmq_recv 4 bytes...
+18:39:55. read_sockf() zmq_recv 4 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=4, off_t=1
+18:39:55. write_sockf() zmq_sending buf 4 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=1
+18:39:55. read_sockf() zmq_recv 1 bytes...
+18:39:55. read_sockf() zmq_recv 1 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=8, off_t=5
+18:39:55. write_sockf() zmq_sending buf 8 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=1
+18:39:55. read_sockf() zmq_recv 1 bytes...
+18:39:55. read_sockf() zmq_recv 1 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=36000, off_t=13
+18:39:55. write_sockf() zmq_sending buf 36000 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=16
+18:39:55. read_sockf() zmq_recv 16 bytes...
+18:39:55. read_sockf() zmq_recv 16 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=1, off_t=36013
+18:39:55. write_sockf() zmq_sending buf 1 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=4
+18:39:55. read_sockf() zmq_recv 4 bytes...
+18:39:55. read_sockf() zmq_recv 4 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=4, off_t=36014
+18:39:55. write_sockf() zmq_sending buf 4 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=1
+18:39:55. read_sockf() zmq_recv 1 bytes...
+18:39:55. read_sockf() zmq_recv 1 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=8, off_t=36018
+18:39:55. write_sockf() zmq_sending buf 8 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=1
+18:39:55. read_sockf() zmq_recv 1 bytes...
+18:39:55. read_sockf() zmq_recv 1 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=36000, off_t=36026
+18:39:55. write_sockf() zmq_sending buf 36000 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=16
+18:39:55. read_sockf() zmq_recv 16 bytes...
+18:39:55. read_sockf() zmq_recv 16 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=1, off_t=72026
+18:39:55. write_sockf() zmq_sending buf 1 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=4
+18:39:55. read_sockf() zmq_recv 4 bytes...
+18:39:55. read_sockf() zmq_recv 4 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=4, off_t=72027
+18:39:55. write_sockf() zmq_sending buf 4 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=1
+18:39:55. read_sockf() zmq_recv 1 bytes...
+18:39:55. read_sockf() zmq_recv 1 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=8, off_t=72031
+18:39:55. write_sockf() zmq_sending buf 8 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=1
+18:39:55. read_sockf() zmq_recv 1 bytes...
+18:39:55. read_sockf() zmq_recv 1 bytes ok
+
+18:39:55. zvm_write() path=/out/detailed_histogram_reply, size=12000, off_t=72039
+18:39:55. write_sockf() zmq_sending buf 12000 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. close_sockf() dual direction zmq socket should be closed later
+18:39:55. close_sockf() zmq socket closing...
+18:39:55. close_sockf() zmq_close ok
+18:39:55. zvm_getattr() getattr_path=/in/sequences_request
+18:39:55. stat_printf() path=/in/sequences_request stat{ st_mode=0x8124, st_ino=6 }
+18:39:55. zvm_open() zvm_open /in/sequences_request
+18:39:55. open_sockf() open socket: ipc:///tmp/zmq/range-request-2, sock type 7
+
+18:39:55. open_sockf() open socket: bind
+18:39:55. open_sockf() zmq_bind ok
+18:39:55. read_sockf() count=24
+18:39:55. read_sockf() zmq_recv 24 bytes...
+18:39:55. read_sockf() zmq_recv 24 bytes ok
+
+18:39:55. read_sockf() count=16
+18:39:55. read_sockf() zmq_recv 16 bytes...
+18:39:55. read_sockf() zmq_recv 16 bytes ok
+
+18:39:55. read_sockf() count=16
+18:39:55. read_sockf() zmq_recv 16 bytes...
+18:39:55. read_sockf() zmq_recv 16 bytes ok
+
+18:39:55. read_sockf() count=16
+18:39:55. read_sockf() zmq_recv 16 bytes...
+18:39:55. read_sockf() zmq_recv 16 bytes ok
+
+18:39:55. close_sockf() zmq socket closing...
+18:39:55. close_sockf() zmq_close ok
+18:39:55. zvm_getattr() getattr_path=/out/ranges0
+18:39:55. stat_printf() path=/out/ranges0 stat{ st_mode=0x8092, st_ino=7 }
+18:39:55. zvm_open() zvm_open /out/ranges0
+18:39:55. open_sockf() open socket: ipc:///tmp/zmq/ranges-7, sock type 3
+
+18:39:55. open_sockf() open socket: connect
+18:39:55. open_sockf() zmq_connect ok
+18:39:55. zvm_getattr() getattr_path=/in/ranges0
+18:39:55. stat_printf() path=/in/ranges0 stat{ st_mode=0x8124, st_ino=12 }
+18:39:55. zvm_open() zvm_open /in/ranges0
+18:39:55. open_sockf() zvm_open use dual socket
+18:39:55. zvm_write() path=/out/ranges0, size=24, off_t=0
+18:39:55. write_sockf() zmq_sending buf 24 bytes...
+18:39:55. write_sockf() zmq_send ok
+18:39:55. read_sockf() count=1
+18:39:55. read_sockf() zmq_recv 1 bytes...
+18:40:09. read_sockf() zmq_recv err -1, errno 4, status Interrupted system call
+18:40:09. zeromq_term() zmq_term trying...
+
+18:40:10. zeromq_term() zmq_term err -1, errno 4 errtext Interrupted system call
+

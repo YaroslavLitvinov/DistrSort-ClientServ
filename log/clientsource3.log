@@ -1,0 +1,57 @@
+18:39:54. main() get_all_files_from_dbtable err=0
+18:39:55. main() Single process sorting complete min=838, max=2147483442: TEST OK.
+
+18:39:55. write_histogram() size=12000, type=0, src_nodeid=3
+18:39:55. write_histogram() w packet_data_t bytes=24
+18:39:55. write_histogram() w array bytes=12000
+18:39:55. read_requests_write_detailed_histograms() Reading from file /tmp/1/7/3/in/detailed_histogram_request detailed histograms request
+18:39:55. read_requests_write_detailed_histograms() r request_data_t bytes=16
+18:39:55. read_requests_write_detailed_histograms() w reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() r is_complete bytes=4
+18:39:55. read_requests_write_detailed_histograms() w node_id bytes=4
+18:39:55. read_requests_write_detailed_histograms() r reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() w sending_array_len bytes=8
+18:39:55. read_requests_write_detailed_histograms() r reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() r array histogram_len bytes=36000
+18:39:55. read_requests_write_detailed_histograms() histograms wrote into file /tmp/1/7/3/out/detailed_histogram_reply
+18:39:55. read_requests_write_detailed_histograms() Reading from file /tmp/1/7/3/in/detailed_histogram_request detailed histograms request
+18:39:55. read_requests_write_detailed_histograms() r request_data_t bytes=16
+18:39:55. read_requests_write_detailed_histograms() w reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() r is_complete bytes=4
+18:39:55. read_requests_write_detailed_histograms() w node_id bytes=4
+18:39:55. read_requests_write_detailed_histograms() r reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() w sending_array_len bytes=8
+18:39:55. read_requests_write_detailed_histograms() r reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() r array histogram_len bytes=36000
+18:39:55. read_requests_write_detailed_histograms() histograms wrote into file /tmp/1/7/3/out/detailed_histogram_reply
+18:39:55. read_requests_write_detailed_histograms() Reading from file /tmp/1/7/3/in/detailed_histogram_request detailed histograms request
+18:39:55. read_requests_write_detailed_histograms() r request_data_t bytes=16
+18:39:55. read_requests_write_detailed_histograms() w reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() r is_complete bytes=4
+18:39:55. read_requests_write_detailed_histograms() w node_id bytes=4
+18:39:55. read_requests_write_detailed_histograms() r reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() w sending_array_len bytes=8
+18:39:55. read_requests_write_detailed_histograms() r reply bytes=1
+18:39:55. read_requests_write_detailed_histograms() r array histogram_len bytes=12000
+18:39:55. read_requests_write_detailed_histograms() histograms wrote into file /tmp/1/7/3/out/detailed_histogram_reply
+18:39:55. main() 
+!!!!!!!Histograms Sending complete!!!!!!.
+
+18:39:55. read_range_request() reading range  request from /tmp/1/7/3/in/sequences_request (EPACKET_SEQUENCE_REQUEST)
+18:39:55. read_range_request() r packet_data_t bytes=24
+18:39:55. read_range_request() readed packet: type=1, size=3, src_node=7
+18:39:55. read_range_request() r packet_data_t bytes=16
+18:39:55. read_range_request() recv range request 3 0 333920
+18:39:55. read_range_request() r packet_data_t bytes=16
+18:39:55. read_range_request() recv range request 3 333921 666346
+18:39:55. read_range_request() r packet_data_t bytes=16
+18:39:55. read_range_request() recv range request 3 666347 999999
+18:39:55. main() write_sorted_ranges fdw=7, fdr=12
+18:39:55. main() req_data_array[i].dst_nodeid=7
+18:39:55. write_sorted_ranges() Sending array_len=333921; min=838, max=718005640
+18:39:55. write_sorted_ranges() writing to /tmp/1/7/3/out/ranges0: size=1335684, type=2 (EPACKET_RANGE)
+18:39:55. write_sorted_ranges() sizeof(struct packet_data_t)=24
+18:39:55. write_sorted_ranges() w packet_data_t bytes=24
+18:40:37. write_sorted_ranges() r reply bytes=0
+18:40:37. write_sorted_ranges() w bytes=-1, size=102400, all=1335684
+18:40:37. write_sorted_ranges() r reply bytes=-1

@@ -1,0 +1,38 @@
+Required packages: ZeroMQ 2.1.x, Fuse 2.9.0;
+Recommended package : sqlite-autoconf-3071100, Executive file sqlite3 can be useful to create and insert data into databases; 
+sqlite-amalgamation already is part of project and located in sqlite dir;  
+
+Applications:
+Server : Fuse server + Zeromq I/O engine. It's create filesystem in memory, currently it has static filesystem
+structure that loading at startup from sqlite database file 'server_dsort.db'; 
+Client : User application, required own running server, one server for single user app. 
+It can communicate with another clients by using files in same manner as communication sockets with read or write ability;   
+Filesystem : It is a layer between user application and server provides networking between client apps; 
+It should be mounted by server before client can use it and access networking; 
+
+How it works : User application uses filesystem in memory hosted by server app; Files can be opened in write or read mode, 
+and every file is associated with networking socket; If client attempt 'write' data to file hosted by server FS, 
+then handled data would be send using ZeroMQ networking socket their transport and endpoint configured in 'server_dsort.db';   
+ 
+Main Project files:
+zf-server - Server that hosts filesystem in memory, and contains ZeroMQ networking engine; 
+Single instance of server is required by every client app;
+test_node - Client that produces simple communication tests: test1PUSH-PULL.sh, test2REQ-REP.sh test scripts uses this node; 
+To perform communication test at least two test_nodes should be launched;
+main_node - Client of distributed sort that acts as single manager node, and one instance is required;
+src_node - Client of distributed sort that acts as source node, Number of src nodes can be configured
+by SRC_NODES_COUNT from defines.h, at least 3 nodes should be set;
+dst_nodes - Same as src_node, but act as destination node with predefined instances number;
+client-server-distributed-sort-5.sh - Launch distributed sort;  It creates required server and client instances, 
+and launch every in dedicated terminal, that displays some progress;
+sql/db_client_dsort.sql Client db contains filelist on server FS that can be used by client-server for communacations;
+ql/db_server_dsort.sql Server db contains filelist on server FS and related transport,endpoint data for networking;
+db_creator.sh it use sqlite3 app, and .sql files as source from target db; 
+
+Logs in log/ dir. Every app is logging into own log file and log filename contains text 'server' or 'client' and node id number;
+
+Limitations: Current version of distributed sort client is not working properly; due to problems with fuse module 
+that is not support direct_io completely; For data packages above 128KB attempted to write into file hosted by FUSE FS
+this data is chunking on 128KB pieces; Currently need to do some changes in networking data flow to get it worked;
+
+ 

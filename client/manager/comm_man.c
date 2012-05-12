@@ -6,7 +6,6 @@
  */
 
 
-#include "node_io.h"
 #include "distr_common.h"
 #include "defines.h"
 #include "logfile.h"

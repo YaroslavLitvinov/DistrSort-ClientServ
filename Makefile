@@ -6,7 +6,10 @@ DEBUG=-g -DLOG_ENABLE
 SRCNODE_INCL=-I. -Iclient -Iclient/source -Isqlite
 MANNODE_INCL=-I. -Iclient -Iclient/manager -Isqlite
 
-all: zf-server dst_node src_node man_node test_node
+all: createdirs zf-server dst_node src_node man_node test_node
+
+createdirs:
+	mkdir -p obj log
 
 zf-server: obj/main.o obj/fs_inmem.o obj/sqlite3.o obj/sqluse_srv.o obj/zmq_netw.o obj/logfile.o
 	gcc -o zf-server obj/main.o obj/fs_inmem.o obj/sqlite3.o obj/sqluse_srv.o obj/zmq_netw.o obj/logfile.o -I. -I./sqlite \
@@ -97,6 +100,6 @@ obj/main_test.o: client/main_test.c
 clean:
 	rm *.o -f
 	rm obj/*.o -f
-	rm ztest zf-server man_node src_node dst_node -f
+	rm zf-server test_node man_node src_node dst_node -f
 	
 

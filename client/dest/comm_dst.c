@@ -7,7 +7,6 @@
 
 
 #include "comm_dst.h"
-#include "node_io.h"
 #include "dsort.h"
 #include "logfile.h"
 #include "defines.h"

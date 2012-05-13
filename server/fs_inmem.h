@@ -17,8 +17,11 @@ struct db_records_t;
 
 enum {EFILE_STD, EFILE_MSQ, EFILE_USER};
 
+struct fs_in_memory_t{
+	struct file_info_array_t *fs_structure;
+};
 
-/////////////////////////////
+
 struct file_info_t {
 	int fd;
 	char* path;
@@ -40,15 +43,6 @@ void process_subdirs_via_callback( int (*callback_add_dir)(const char *, int), c
 
 void
 fill_fsstructure_by_records( struct file_info_array_t **fs_structure, struct db_records_t *file_records);
-/////////////////////////////
-
-
-
-/////////////////////////////
-struct fs_in_memory{
-	struct fs_chunk_manager  *chunk_manager;
-	struct file_info_array_t *fs_structure;
-};
 
 
 int run_fuse_main( struct db_records_t *file_records, int argc, char *argv[]);

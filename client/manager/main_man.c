@@ -37,19 +37,21 @@ int main(int argc, char *argv[]){
 
 	int nodeid = atoi(argv[2]);
 
+	WRITE_LOG(LOG_UI, "Manager node started");
+
 	//////////////////////////////////////////
 	struct file_record_t* hist_record = match_file_record_by_fd( &file_records, MANAGER_FD_READ_HISTOGRAM);
 	assert(hist_record);
 	struct Histogram histograms[SRC_NODES_COUNT];
-	WRITE_LOG(LOG_UI, "Recv histograms");
+	WRITE_LOG(LOG_DETAILED_UI, "Recv histograms");
 	recv_histograms( hist_record->fpath, (struct Histogram*) &histograms, SRC_NODES_COUNT );
-	WRITE_LOG(LOG_UI, "Recv histograms OK");
+	WRITE_LOG(LOG_DETAILED_UI, "Recv histograms OK");
 	//////////////////////////////////////////
 
-	WRITE_LOG(LOG_UI, "Analize histograms and request detailed histograms");
+	WRITE_LOG(LOG_DETAILED_UI, "Analize histograms and request detailed histograms");
 	struct request_data_t** range = alloc_range_request_analize_histograms( &file_records,
 			ARRAY_ITEMS_COUNT, nodeid, histograms, SRC_NODES_COUNT );
-	WRITE_LOG(LOG_UI, "Analize histograms and request detailed histograms OK");
+	WRITE_LOG(LOG_DETAILED_UI, "Analize histograms and request detailed histograms OK");
 
 #if defined(LOG_ENABLE) && LOG_LEVEL>=LOG_MISC
 	for (int i=0; i < SRC_NODES_COUNT; i++ )
@@ -88,7 +90,7 @@ int main(int argc, char *argv[]){
 			if ( !(results[i].max > results[i].min && results[i-1].max < results[i].min) )
 				sort_ok = 0;
 		}
-		WRITE_FMT_LOG(LOG_DETAILED_UI, "results[%d], nodeid=%d, min=%d, max=%d\n",
+		WRITE_FMT_LOG(LOG_UI, "results[%d], nodeid=%d, min=%d, max=%d\n",
 				i, results[i].nodeid, results[i].min, results[i].max);
 		fflush(0);
 	}

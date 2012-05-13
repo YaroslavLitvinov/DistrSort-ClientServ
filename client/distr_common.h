@@ -25,7 +25,8 @@ typedef struct histogram_item_t *HistogramArrayPtr;
 typedef struct histogram_item_t HistogramArrayItem;
 
 /*Identifiers of packets sending beetwen nodes*/
-enum packet_t { EPACKET_UNKNOWN=-1, EPACKET_HISTOGRAM, EPACKET_SEQUENCE_REQUEST, EPACKET_RANGE };
+enum packet_t { EPACKET_UNKNOWN=-1, EPACKET_HISTOGRAM, EPACKET_SEQUENCE_REQUEST,
+	EPACKET_RANGE, EPACKET_RANGE_PART };
 
 struct histogram_item_t
 {

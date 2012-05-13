@@ -18,13 +18,16 @@
 #define SOURCE "source\0"
 #define DEST "dest\0"
 
-/*Debugging*/
+/*FUSE support, data flow between nodes is changed: big array data was divided
+ * into smaller data packets, with size FUSE_IO_MAX_CHUNK_SIZE*/
 #define FUSE_CLIENT
-#define FUSE_IO_MAX_CHUNK_SIZE (100*1024)
-#define DEBUG_PRINT_ARRAY
+#ifdef FUSE_CLIENT
+	#define FUSE_IO_MAX_CHUNK_SIZE (100*1024)
+#endif
+
 
 #define ARRAY_ITEMS_COUNT 1000000
-#define SRC_NODES_COUNT 3
+#define SRC_NODES_COUNT 5
 
 #define FIRST_SOURCE_NODEID 2
 #define LAST_SOURCE_NODEID (FIRST_SOURCE_NODEID+SRC_NODES_COUNT-1)

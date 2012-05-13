@@ -17,7 +17,7 @@
 #define LOG_DATA 4
 #define LOG_MISC 5
 #define LOG_DEBUG 6
-#define LOG_LEVEL LOG_DEBUG
+#define LOG_LEVEL LOG_UI
 
 //forward declarations
 int log_open_stream(const char *log_file, const char* prefix, int id);

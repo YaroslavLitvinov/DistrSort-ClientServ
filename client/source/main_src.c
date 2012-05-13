@@ -102,10 +102,6 @@ int main(int argc, char *argv[]){
 		WRITE_FMT_LOG(LOG_MISC, "[%d]Sending Ranges Complete-OK", nodeid);
 		//////////////////////////////
 
-#if defined(LOG_ENABLE) && defined(DEBUG_PRINT_ARRAY)
-	print_array("sorted array", partially_sorted_array, ARRAY_ITEMS_COUNT);
-#endif
-
 		free(unsorted_array);
 		free(partially_sorted_array);
 	}

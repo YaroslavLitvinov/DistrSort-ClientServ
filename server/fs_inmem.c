@@ -33,7 +33,7 @@
 #define ACS_ALLREAD  S_IRUSR|S_IRGRP|S_IROTH
 #define ACS_ALLWRITE S_IWUSR|S_IWGRP|S_IWOTH
 
-static struct fs_in_memory *__fs;
+static struct fs_in_memory_t *__fs;
 static struct zeromq_pool *__zmq_pool;
 struct db_records_t *__db_records;
 
@@ -509,7 +509,7 @@ int run_fuse_main(struct db_records_t *db_records, int argc, char *argv[])
 {
 	assert(db_records);
 	__db_records = db_records;
-	__fs = malloc( sizeof(struct fs_in_memory) );
+	__fs = malloc( sizeof(struct fs_in_memory_t) );
 	fill_fsstructure_by_records( &__fs->fs_structure, db_records);
 	__zmq_pool = malloc(sizeof(struct zeromq_pool));
 	init_zeromq_pool(__zmq_pool);

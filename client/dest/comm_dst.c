@@ -36,13 +36,51 @@ repreq_read_sorted_ranges( const char *readf, const char *writef, int nodeid,
 	int fdr = open(readf, O_RDONLY);
 	int fdw = open(writef, O_WRONLY);
 	int bytes;
-	WRITE_FMT_LOG(LOG_NET, "[%d] Read ranges from %s\n", nodeid, readf);
+
 	char reply='-';
+
+#ifdef FUSE_CLIENT
+	/*FUSE server does not support data size > 128KB by sending side
+	 * therefore data divided into smaller blocks FUSE_IO_MAX_CHUNK_SIZE*/
+	int recv_bytes_count = 0;
+	int waiting_array_bytes_count = 0;
+	int recv_ranges=0;
+	WRITE_FMT_LOG(LOG_NET, "[%d] recv array -->", nodeid);
+
+	struct packet_data_t header;
+	do{
+		bytes=read( fdr, (char*)&header, sizeof(header) );
+		WRITE_FMT_LOG(LOG_DEBUG, "r EPACKET_RANGE bytes=%d", bytes);
+
+		switch( header.type ){
+		case EPACKET_RANGE:
+			waiting_array_bytes_count += header.size;
+			recv_ranges++;
+			break;
+		case EPACKET_RANGE_PART:
+			/*two reads one by one: first reading header, it's read from socket only 24bytes,
+			 * second read is reading from buffer where unread data by 1st read was saved*/
+			bytes = read( fdr, (char*)&dst_array[recv_bytes_count/sizeof(BigArrayItem)], header.size );
+			recv_bytes_count += bytes;
+			WRITE_FMT_LOG(LOG_DEBUG, "r dst_array bytes=%d", bytes);
+			assert(bytes>0);
+			break;
+		default:
+			WRITE_FMT_LOG(LOG_DEBUG, "Unknown header=%d", header.type);
+			break;
+		}
+		bytes=write(fdw, &reply, 1);
+		WRITE_FMT_LOG(LOG_DEBUG, "w reply bytes=%d", bytes);
+		/*waiting in loop while not all waiting bytes received and for all ranges*/
+	}while( recv_bytes_count < waiting_array_bytes_count || recv_ranges < ranges_count );
+#else
+	WRITE_FMT_LOG(LOG_NET, "[%d] Read ranges from %s\n", nodeid, readf);
 	for (int i=0; i < ranges_count; i++)
 	{
 		int recv_bytes_count = 0;
 		WRITE_FMT_LOG(LOG_NET, "[%d] recv array -->", nodeid);
 		struct packet_data_t t;
+
 		bytes=read( fdr, (char*)&t, sizeof(t) );
 		WRITE_FMT_LOG(LOG_DEBUG, "r packet_data_t bytes=%d", bytes);
 		WRITE_FMT_LOG(LOG_ERR, "asert t.type=%d %d(EPACKET_RANGE)", t.type, EPACKET_RANGE);
@@ -50,26 +88,14 @@ repreq_read_sorted_ranges( const char *readf, const char *writef, int nodeid,
 		bytes=write(fdw, &reply, 1);
 		WRITE_FMT_LOG(LOG_DEBUG, "w reply bytes=%d", bytes);
 		WRITE_FMT_LOG(LOG_NET, "[%d]Send reply to %s", nodeid, writef);
-#ifdef FUSE_CLIENT
-		while(recv_bytes_count < t.size){
-			int packsize = min(t.size-recv_bytes_count, FUSE_IO_MAX_CHUNK_SIZE);
-			int readed = read( fdr, (char*)&dst_array[recv_bytes_count/sizeof(BigArrayItem)], packsize );
-			WRITE_FMT_LOG(LOG_DEBUG, "r dst_array bytes=%d", readed);
-			assert(readed>0);
-			recv_bytes_count += readed;
-			WRITE_FMT_LOG(LOG_NET, "readed %d bytes, all=%d\n", recv_bytes_count, (int)t.size );
-			bytes=write(fdw, &reply, 1);
-			WRITE_FMT_LOG(LOG_DEBUG, "w reply bytes=%d", bytes);
-			WRITE_FMT_LOG(LOG_NET, "[%d]Send reply to %s", nodeid, writef);
-		}
-#else
 		read( fdr, (char*)&dst_array[recv_bytes_count/sizeof(BigArrayItem)], t.size );
 		recv_bytes_count += t.size;
 		WRITE_FMT_LOG(LOG_NET, "[%d]--size=%d OK\n", nodeid, (int)t.size );
 		write(fdw, &reply, 1);
 		WRITE_FMT_LOG(LOG_NET, "[%d]Send reply to %s", nodeid, writef);
-#endif
 	}
+#endif
+
 	close(fdr);
 	close(fdw);
 	WRITE_FMT_LOG(LOG_NET, "[%d] channel_receive_sorted_ranges OK\n", nodeid );

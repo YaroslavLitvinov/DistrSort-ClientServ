@@ -1,7 +1,12 @@
+=========================== Third party Packages ========================= 
 Required packages: ZeroMQ 2.1.x, Fuse 2.9.0;
 Recommended package : sqlite-autoconf-3071100, Executive file sqlite3 can be useful to create and insert data into databases; 
 sqlite-amalgamation already is part of project and located in sqlite dir;  
 
+=========================== Project info ============================
+This is a proof-of-concept project to use it by ZeroVM messaging; 
+This project is showing how can be implemented Distributed Sort using specific client-server technology;
+To do nodes networking client using special communication files, which can be read only and write only.
 Applications:
 Server : Fuse server + Zeromq I/O engine. It's create filesystem in memory, currently it has static filesystem
 structure that loading at startup from sqlite database file 'server_dsort.db'; 
@@ -9,12 +14,22 @@ Client : User application, required own running server, one server for single us
 It can communicate with another clients by using files in same manner as communication sockets with read or write ability;   
 Filesystem : It is a layer between user application and server provides networking between client apps; 
 It should be mounted by server before client can use it and access networking; 
-
-How it works : User application uses filesystem in memory hosted by server app; Files can be opened in write or read mode, 
+How it works : 
+Every user application uses filesystem in memory hosted by server app; Files can be opened in write or read mode, 
 and every file is associated with networking socket; If client attempt 'write' data to file hosted by server FS, 
-then handled data would be send using ZeroMQ networking socket their transport and endpoint configured in 'server_dsort.db';   
+then handled data would be send by ZeroMQ networking socket using transport and endpoint configured in 'server_dsort.db';   
+To get more information about sorting job see "Distributed-Sort" on github. For example it's an actual diagram: 
+https://github.com/YaroslavLitvinov/Distributed-Sort/blob/master/zeromq-diagram.pdf
+
+============================= Run Distributed Sort =========================
+Currently by default you can build and run sorting with 5 source and 5 destination nodes;
+To compile it, just do "make" 
+You can run Distributed sort by a helper script, from project folder:
+./client-server-distributed-sort-5.sh /tmp/1/5
+To see results:
+ cat log/clientmanager1.log
  
-Main Project files:
+ ============================ Project files ============================
 zf-server - Server that hosts filesystem in memory, and contains ZeroMQ networking engine; 
 Single instance of server is required by every client app;
 test_node - Client that produces simple communication tests: test1PUSH-PULL.sh, test2REQ-REP.sh test scripts uses this node; 
@@ -29,10 +44,17 @@ sql/db_client_dsort.sql Client db contains filelist on server FS that can be use
 ql/db_server_dsort.sql Server db contains filelist on server FS and related transport,endpoint data for networking;
 db_creator.sh it use sqlite3 app, and .sql files as source from target db; 
 
-Logs in log/ dir. Every app is logging into own log file and log filename contains text 'server' or 'client' and node id number;
+============================= Logging ==================================
+Logs are located in log/ dir. 
+Every app servers and clients are logging into own log file and log filename contains text 'server' or 'client' and node id number;
 
-Limitations: Current version of distributed sort client is not working properly; due to problems with fuse module 
-that is not support direct_io completely; For data packages above 128KB attempted to write into file hosted by FUSE FS
-this data is chunking on 128KB pieces; Currently need to do some changes in networking data flow to get it worked;
-
- 
+============================ Data Flow =============================
+1.Every of 5 source nodes at the launch simply generates 1000000 4bytes integers to use it as source for distributed sorting.
+2.Every source node locally sorting this data;
+3.At the next source node is creating Histogram of locally sorted data, where starting from 0 item every 1000 item is added into histogram;
+4.All histograms from 5 source nodes are sending to manager node to analize it;
+5.Manager node analizing received histograms and during of analize requests detailed histograms from every source nodes.
+In fact detailed histograms is simple raw sorting data near to future bounds of destination sorted arrays;    
+6.As result of processed histograms we have start and end bounds of future resulted source arrays;
+Every source array is divided into N parts, where N - is source nodes count;
+...

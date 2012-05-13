@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 
 void
@@ -103,7 +104,7 @@ read_requests_write_detailed_histograms( const char* readf, const char* writef, 
 		bytes=write(fdw, histogram, histogram_len*sizeof(HistogramArrayItem) );
 		WRITE_FMT_LOG(LOG_DEBUG, "r array histogram_len bytes=%d", bytes);
 		free( histogram );
-		WRITE_FMT_LOG(LOG_UI, "histograms wrote into file %s", writef );
+		WRITE_FMT_LOG(LOG_DETAILED_UI, "histograms wrote into file %s", writef );
 	}while(!is_complete);
 
 	close(fdr);
@@ -163,6 +164,48 @@ write_sorted_ranges( const char *writef, const char *readf,
 	WRITE_FMT_LOG(LOG_NET, "Sending array_len=%d; min=%d, max=%d", array_len, array[0], array[array_len-1]);
 	int bytes;
 	char unused_reply;
+
+#ifdef FUSE_CLIENT
+	/*FUSE server does not support data size > 128KB passed trying to write into file
+	 * therefore divide array data into smaller blocks FUSE_IO_MAX_CHUNK_SIZE*/
+	int length_of_array_part = FUSE_IO_MAX_CHUNK_SIZE / sizeof(BigArrayItem);
+	/*get size of array part alligned by item size*/
+	int size_of_array_part = length_of_array_part * sizeof(BigArrayItem);
+	int sent_array_size = 0;
+
+	/*write into header complete size of sending array, size field contain sending array size*/
+	struct packet_data_t range_header;
+	range_header.size = array_len*sizeof(BigArrayItem);
+	range_header.type = EPACKET_RANGE;
+	bytes=write(fdw, (char*) &range_header, sizeof(struct packet_data_t) );
+	WRITE_FMT_LOG(LOG_DEBUG, "w header EPACKET_RANGE bytes=%d", bytes);
+	bytes=read( fdr, &unused_reply, 1 );
+	WRITE_FMT_LOG(LOG_DEBUG, "r reply bytes=%d", bytes);
+
+	struct packet_data_t range_part_header;
+	range_part_header.type = EPACKET_RANGE_PART;
+	while( sent_array_size < range_header.size ){
+		int sending_data_size = min(size_of_array_part, range_header.size - sent_array_size );
+		range_part_header.size = sending_data_size;
+		int buf_size = sizeof(struct packet_data_t) + sending_data_size;
+		char *buffer = malloc(buf_size);
+		/*write header into buffer*/
+		memcpy(buffer, &range_part_header, sizeof(struct packet_data_t) );
+		WRITE_FMT_LOG(LOG_DEBUG, "w into buffer EPACKET_RANGE_PART bytes=%d", (int)sizeof(struct packet_data_t));
+		/*write array data into buffer*/
+		int sent_array_items = sent_array_size / sizeof(BigArrayItem);
+		memcpy(buffer+sizeof(struct packet_data_t), array+sent_array_items, sending_data_size );
+		WRITE_FMT_LOG(LOG_DEBUG, "w into buffer array bytes=%d", sending_data_size);
+		/*write buffer into file*/
+		bytes=write(fdw, buffer, buf_size);
+		WRITE_FMT_LOG(LOG_DEBUG, "w array bytes=%d", bytes);
+		bytes=read( fdr, &unused_reply, 1 );
+		WRITE_FMT_LOG(LOG_DEBUG, "r reply bytes=%d", bytes);
+		free(buffer);
+		sent_array_size += sending_data_size;
+	}
+#else
+	/*write header*/
 	struct packet_data_t t;
 	t.size = array_len*sizeof(BigArrayItem);
 	t.type = EPACKET_RANGE;
@@ -172,18 +215,7 @@ write_sorted_ranges( const char *writef, const char *readf,
 	WRITE_FMT_LOG(LOG_DEBUG, "w packet_data_t bytes=%d", bytes);
 	bytes=read( fdr, &unused_reply, 1 );
 	WRITE_FMT_LOG(LOG_DEBUG, "r reply bytes=%d", bytes);
-
-#ifdef FUSE_CLIENT
-	int bytes_sent = 0;
-	while(bytes_sent < t.size){
-		int packsize = min(t.size-bytes_sent, FUSE_IO_MAX_CHUNK_SIZE);
-		bytes_sent += write(fdw, (char*) array+bytes_sent, packsize );
-		WRITE_FMT_LOG(LOG_NET, "w bytes=%d, size=%d, all=%d", bytes_sent, packsize, (int)t.size);
-		bytes=read( fdr, &unused_reply, 1 );
-		WRITE_FMT_LOG(LOG_DEBUG, "r reply bytes=%d", bytes);
-		assert(bytes!=-1 && bytes!=0);
-	}
-#else
+	/*write array data*/
 	bytes=write(fdw, array, t.size);
 	WRITE_FMT_LOG(LOG_DEBUG, "w array bytes=%d", bytes);
 	WRITE_FMT_LOG(LOG_NET, "Reading from %s receiver reply;", readf);

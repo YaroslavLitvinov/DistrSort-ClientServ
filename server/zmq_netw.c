@@ -178,9 +178,8 @@ void close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
 		else{
 			WRITE_LOG(LOG_ERR, "zmq_close ok");
 		}
-
-		remove_sockf_from_array_by_fd(zpool, sockf->fs_fd );
 	}
+	remove_sockf_from_array_by_fd(zpool, sockf->fs_fd );
 }
 
 

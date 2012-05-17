@@ -1,8 +1,3 @@
-=========================== Third party Packages ========================= 
-Required packages: ZeroMQ 2.1.x, Fuse 2.9.0;
-Recommended package : sqlite-autoconf-3071100, Executive file sqlite3 can be useful to create and insert data into databases; 
-sqlite-amalgamation already is part of project and located in sqlite dir;  
-
 =========================== Project info ============================
 This is a proof-of-concept project to use it by ZeroVM messaging; 
 This project is showing how can be implemented Distributed Sort using specific client-server technology;
@@ -21,13 +16,45 @@ then handled data would be send by ZeroMQ networking socket using transport and 
 To get more information about sorting job see "Distributed-Sort" on github. For example it's an actual diagram: 
 https://github.com/YaroslavLitvinov/Distributed-Sort/blob/master/zeromq-diagram.pdf
 
+=========================== install third-party Packages =========================
+Required packages: ZeroMQ 2.1.x, Fuse 2.9.0;
+Recommended package : sqlite-autoconf-3071100, Executive file sqlite3 can be useful to create and insert data into databases; 
+sqlite-amalgamation already is part of project and located in sqlite dir;  
+in terminal >
+
+echo Install sqlite-autoconf
+wget http://www.sqlite.org/sqlite-autoconf-3071200.tar.gz
+tar xvfz sqlite-autoconf-3071200.tar.gz
+cd sqlite-autoconf-3071200/
+make
+sudo make install
+
+echo Install zeromq
+wget http://download.zeromq.org/zeromq-2.2.0.tar.gz
+tar xvfz zeromq-2.2.0.tar.gz
+cd zeromq-2.2.0
+./configure
+make
+sudo make install
+
+Download fuse, by link http://sourceforge.net/projects/fuse/files/latest/download?source=files
+tar xvfz fuse-2.9.0.tar.gz 
+./configure
+make
+sudo make install
+
 ============================= Run Distributed Sort =========================
 Currently by default you can build and run sorting with 5 source and 5 destination nodes;
-To compile it, just do "make" 
-You can run Distributed sort by a helper script, from project folder:
+You can run Distributed sort folowing this, in terminal >
+make
+echo create db files
+./db_creator.sh
 ./client-server-distributed-sort-5.sh /tmp/1/5
-To see results:
- cat log/clientmanager1.log
+echo To see results:
+cat log/clientmanager1.log
+
+It is recommended to set as parameter an different path at every exec of sort script, because sometimes FUSE 
+for some reason does not unmount the folder, and then the sort can not properly run;
  
  ============================ Project files ============================
 zf-server - Server that hosts filesystem in memory, and contains ZeroMQ networking engine; 
@@ -47,6 +74,7 @@ db_creator.sh it use sqlite3 app, and .sql files as source from target db;
 ============================= Logging ==================================
 Logs are located in log/ dir. 
 Every app servers and clients are logging into own log file and log filename contains text 'server' or 'client' and node id number;
+In logfile.h you can set log detailing by changing LOG_LEVEL defined value;
 
 ============================ Data Flow =============================
 1.Every of 5 source nodes at the launch simply generates 1000000 4bytes integers to use it as source for distributed sorting.

@@ -54,10 +54,12 @@ int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azC
 	if ( file_records ){
 		struct db_record_t *frecord = NULL;
 		struct db_records_t *records = (struct db_records_t *) file_records;
-		if ( records->count < records->maxcount )
+		//if need to expand array
+		if ( records->count >= records->maxcount ){
+			records->maxcount += DB_RECORDS_GRANULARITY;
+			records->array = realloc(records->array, sizeof(struct db_record_t)*records->maxcount);
+		}else
 			frecord = &records->array[records->count++];
-		else
-			return 0;
 		for(int i=0; i<argc; i++){
 			const char *col_value = argv[i];
 			int len_value = strlen(col_value);
@@ -126,9 +128,9 @@ int get_all_records_from_dbtable(const char *path, const char *nodename, struct 
 		sqlite3_close(db);
 		return 1;
 	}
+	db_records->maxcount = DB_RECORDS_GRANULARITY;
+	db_records->array = malloc( sizeof(struct db_record_t)*db_records->maxcount );
 
-	db_records->array = malloc( sizeof(struct db_record_t)*30 );
-	db_records->maxcount = 30;
 	db_records->count = 0;
 	char sqlstr[100];
 	sprintf(sqlstr, "select * from channels where nodename='%s';", nodename);

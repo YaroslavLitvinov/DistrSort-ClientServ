@@ -47,22 +47,35 @@ struct zeromq_pool{
 	struct sock_file_t* sockf_array;
 	int count_max;
 };
-void init_zeromq_pool(struct zeromq_pool * zpool);
-void add_sockf_copy_to_array(struct zeromq_pool* zpool, struct sock_file_t* sockf);
-void remove_sockf_from_array_by_fd(struct zeromq_pool* zpool, int fd);
-size_t sockf_array_items_count(const struct zeromq_pool* zpool);
 
-/*find*/
+enum errcode{ERR_OK=0, ERR_ERROR=-1, ERR_ALREADY_EXIST=-2, ERR_NOT_FOUND=-3, ERR_NO_MEMORY=-4};
+
+/*find sock in array*/
 struct sock_file_t* sockf_by_fd(struct zeromq_pool* zpool, int fd);
-/*open*/
-struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *db_records, int fd);
-/*close*/
-void close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf);
-/*stream write*/
-ssize_t write_sockf(struct sock_file_t *sockf, const char *buf, size_t count);
-/*stream write*/
-ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count);
-void zeromq_term(struct zeromq_pool* zpool);
+/*add sock to array*/
+int add_sockf_copy_to_array(struct zeromq_pool* zpool, struct sock_file_t* sockf);
+/*remove sock from array*/
+int remove_sockf_from_array_by_fd(struct zeromq_pool* zpool, int fd);
 
+/*init zmq, init array of socket*/
+int init_zeromq_pool(struct zeromq_pool * zpool);
+/*search dual direction already opened socket associated with fd*
+ *@return NULL if no socket is associated with fd, else return associated socket;*/
+struct sock_file_t* get_dual_sockf(struct zeromq_pool* zpool, struct db_records_t *db_records, int fd);
+/*open sock*/
+struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *db_records, int fd);
+/*close sock
+ * @return err*/
+int close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf);
+/*stream write sock*/
+ssize_t write_sockf(struct sock_file_t *sockf, const char *buf, size_t count);
+/*stream read sock*/
+ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count);
+/*free zmq resources*/
+int zeromq_term(struct zeromq_pool* zpool);
+/*open all sockets connections*/
+int open_all_comm_files(struct zeromq_pool* zpool, struct db_records_t *db_records);
+/*close all sockets connections*/
+int close_all_comm_files(struct zeromq_pool* zpool, struct db_records_t *db_records);
 
 #endif /* ZMQ_NETW_H_ */

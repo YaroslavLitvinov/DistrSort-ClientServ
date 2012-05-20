@@ -17,13 +17,62 @@
 #include <stdio.h>
 
 
-void init_zeromq_pool(struct zeromq_pool * zpool){
+int init_zeromq_pool(struct zeromq_pool * zpool){
+	int err = 0;
 	assert(zpool);
-	zpool->context = NULL;
-	zpool->count_max=ESOCKF_ARRAY_GRANULARITY;
-	zpool->sockf_array = malloc(zpool->count_max * sizeof(struct sock_file_t));
-	for (int i=0; i < zpool->count_max; i++)
-		zpool->sockf_array[i].unused = 1;
+	/*create zmq context*/
+	zpool->context = zmq_init(1);
+	if ( zpool->context ){
+			zpool->count_max=ESOCKF_ARRAY_GRANULARITY;
+		/*allocated memory for array should be free at the zeromq_term */
+		zpool->sockf_array = malloc(zpool->count_max * sizeof(struct sock_file_t));
+		if ( zpool->sockf_array ) {
+			memset(zpool->sockf_array, '\0', sizeof(struct sock_file_t)*zpool->count_max);
+			for (int i=0; i < zpool->count_max; i++)
+				zpool->sockf_array[i].unused = 1;
+			err = ERR_OK;
+		}
+		else{
+			/*no memory allocated*/
+			WRITE_FMT_LOG(LOG_ERR, "%d bytes alloc error", (int)sizeof(struct sock_file_t));
+			err = ERR_NO_MEMORY;
+		}
+	}
+	else{
+		WRITE_FMT_LOG(LOG_ERR, "zmq_init err %d, errno %d errtext %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
+		err = ERR_ERROR;
+	}
+	return err;
+}
+
+int zeromq_term(struct zeromq_pool* zpool){
+	int err = ERR_OK;
+	assert(zpool);
+	/*free array*/
+	if ( zpool->sockf_array ){
+		for ( int i=0; i < zpool->count_max; i++ ){
+			if ( zpool->sockf_array[i].tempbuf ){
+				free(zpool->sockf_array[i].tempbuf);
+			}
+		}
+		free(zpool->sockf_array), zpool->sockf_array = NULL;
+	}
+
+	/*destroy zmq context*/
+	if (zpool->context){
+		WRITE_LOG(LOG_ERR, "zmq_term trying...\n");fflush(0);
+		int err= zmq_term(zpool->context);
+		if ( err != 0 ){
+			err = ERR_ERROR;
+			WRITE_FMT_LOG(LOG_ERR, "zmq_term err %d, errno %d errtext %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
+		}
+		else{
+			err= ERR_OK;
+			zpool->context = NULL;
+			WRITE_LOG(LOG_ERR, "zmq_term ok\n");
+		}
+	}
+	return err;
 }
 
 struct sock_file_t* sockf_by_fd(struct zeromq_pool* zpool, int fd){
@@ -33,19 +82,11 @@ struct sock_file_t* sockf_by_fd(struct zeromq_pool* zpool, int fd){
 	return 0;
 }
 
-size_t sockf_array_items_count(const struct zeromq_pool* zpool){
-	size_t count=0;
-	for (int i=0; i < zpool->count_max; i++)
-		if ( !zpool->sockf_array[i].unused )
-			count++;
-	return count;
-}
-
-
-void add_sockf_copy_to_array(struct zeromq_pool* zpool, struct sock_file_t* sockf){
+int add_sockf_copy_to_array(struct zeromq_pool* zpool, struct sock_file_t* sockf){
+	int err = ERR_OK;
 	assert(zpool);
 	assert(sockf);
-	if( sockf_by_fd(zpool, sockf->fs_fd) ) return;
+	if( sockf_by_fd(zpool, sockf->fs_fd) ) return ERR_ALREADY_EXIST;
 
 	struct sock_file_t* sockf_add = NULL;
 	do{
@@ -59,110 +100,160 @@ void add_sockf_copy_to_array(struct zeromq_pool* zpool, struct sock_file_t* sock
 		if ( !sockf_add ){
 			zpool->count_max+=ESOCKF_ARRAY_GRANULARITY;
 			zpool->sockf_array = realloc(zpool->sockf_array, zpool->count_max * sizeof(struct sock_file_t));
+			if ( zpool->sockf_array ){
+				for (int i=zpool->count_max-ESOCKF_ARRAY_GRANULARITY; i < zpool->count_max; i++)
+					zpool->sockf_array[i].unused = 1;
+			}
+			else{
+				err = ERR_ERROR;
+				WRITE_LOG(LOG_ERR, "sockf_array realloc mem failed");
+			}
 		}
-	}while(!sockf_add);
+	}while(!sockf_add || ERR_OK!=err);
 	*sockf_add = *sockf;
 	sockf_add->unused = 0;
+	return err;
 }
 
 
-void remove_sockf_from_array_by_fd(struct zeromq_pool* zpool, int fd){
+int remove_sockf_from_array_by_fd(struct zeromq_pool* zpool, int fd){
+	int err = ERR_NOT_FOUND;
 	assert(zpool);
 	for (int i=0; i < zpool->count_max; i++)
 		if ( zpool->sockf_array[i].fs_fd == fd){
 			zpool->sockf_array[i].unused = 1;
+			err = ERR_OK;
 			break;
 		}
+	return err;
 }
+
+
+struct sock_file_t* get_dual_sockf(struct zeromq_pool* zpool, struct db_records_t *db_records, int fd){
+	/*search existing dual direction socket*/
+	struct sock_file_t *dual_sockf = NULL;
+	struct db_record_t* record1 = NULL;
+	struct db_record_t* record2 = NULL;
+	struct db_record_t* db_record = match_db_record_by_fd( db_records, fd);
+	if ( !db_record ) return NULL; /*no records found, can be illegal using */
+
+	/*Dual direction socket has identical socket params but fmode read / write mode is different*/
+	for ( int i=0; i < db_records->count; i++ ){
+		if ( !strcmp(db_records->array[i].endpoint, db_record->endpoint ) &&
+				db_records->array[i].method == db_record->method &&
+				db_records->array[i].sock == db_record->sock ){
+			if ( db_records->array[i].fmode == 'r' )
+				record1 = &db_records->array[i];
+			if ( db_records->array[i].fmode == 'w' )
+				record2 = &db_records->array[i];
+		}
+	}
+	/*If requested fd should be use dual direction socket*/
+	if ( record1 && record2 ){
+		struct sock_file_t *sockf1 = sockf_by_fd(zpool, record1->fd );
+		struct sock_file_t *sockf2 = sockf_by_fd(zpool, record2->fd );
+		/*if found socket then use exiting zeromq socket*/
+		if ( sockf1 )
+			dual_sockf = sockf1;
+		else if ( sockf2 )
+			dual_sockf = sockf2;
+	}
+	return dual_sockf;
+}
+
 
 struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *db_records, int fd){
 	assert(db_records);
 	struct sock_file_t *sockf = sockf_by_fd(zpool, fd );
 	if ( sockf ) {
+		/*file with predefined descriptor already opened, just return socket*/
 		WRITE_FMT_LOG(LOG_MISC, "Existing socket: Trying toopen twice? %d", sockf->fs_fd);
 		return sockf;
 	}
-	else if ( !sockf ){
-		/*socket is not exist, so search fd record in DB to get socket params*/
-		struct db_record_t* db_record = match_db_record_by_fd( db_records, fd);
-		if ( db_record ){
-			/*create new sock_file_t*/
-			sockf = malloc( sizeof(struct sock_file_t) );
+
+	/* Trying to open new msq file because socket asociated with file descriptor is not found,
+	 * trying to open socket in normal way, first search socket data associated with file descriptor
+	 * in channels DB; From found db_record retrieve socket details data and start sockf opening flow;
+	 * Flow1: For non existing, non dual socket add new socket record and next create&init zmq network socket;
+	 * Flow2: For file descriptor with existing associated dual direction socket, add new socket record into
+	 * array of sockets, but use already existing zmq networking socket for both 'r','w' descriptors;*/
+	struct db_record_t* db_record = match_db_record_by_fd( db_records, fd);
+	if ( db_record ){
+		/*create new socket record {sock_file_t}*/
+		sockf = malloc( sizeof(struct sock_file_t) );
+		if ( !sockf ){
+			WRITE_LOG(LOG_ERR, "sockf malloc NULL");
+		}
+		else{
 			sockf->fs_fd = db_record->fd;
 			sockf->sock_type = db_record->sock;
 			sockf->tempbuf = NULL;
 
-			/*search existing dual direction socket*/
-			struct sock_file_t *dual_sockf = NULL;
-			struct db_record_t* record1 = match_db_record_by_endpoint_mode( db_records, db_record->endpoint, 'w');
-			struct db_record_t* record2 = match_db_record_by_endpoint_mode( db_records, db_record->endpoint, 'r');
-			/*if found records with mode='r','w' with same endpoint, then use it as dual direction socket*/
-			if ( record1 && record2 && record1->method == record2->method ){
-				struct sock_file_t *sockf1 = sockf_by_fd(zpool, record1->fd );
-				struct sock_file_t *sockf2 = sockf_by_fd(zpool, record2->fd );
-				/*if found socket then use exiting zeromq socket*/
-				if ( sockf1 )
-					dual_sockf = sockf1;
-				else if ( sockf2 )
-					dual_sockf = sockf2;
-			}
-			/*should be only one zeromq socket for two files with the same endpoint
-			 * (it's a trick for dual direction sockets)*/
+			/*search existing dual direction socket should be only one zeromq socket for two files with
+			 * the same endpoint (it's a trick for dual direction sockets)*/
+			struct sock_file_t* dual_sockf = get_dual_sockf(zpool, db_records, fd);
 			if ( dual_sockf ){
-				WRITE_LOG(LOG_MISC, "zvm_open use dual socket");
+				/*Flow2: dual direction socket, use existing zmq network socket*/
+				WRITE_LOG(LOG_DEBUG, "zvm_open use dual socket");
 				sockf->netw_socket = dual_sockf->netw_socket;
 			}
 			else{
+				/*Flow1: init zmq network socket in normal way*/
 				WRITE_FMT_LOG(LOG_NET, "open socket: %s, sock type %d\n", db_record->endpoint, db_record->sock);
 				sockf->netw_socket = zmq_socket( zpool->context, db_record->sock );
-				int err=-1;
-				switch(db_record->method){
-				case EMETHOD_BIND:
-					WRITE_LOG(LOG_NET, "open socket: bind");
-					err= zmq_bind(sockf->netw_socket, db_record->endpoint);
-					if ( err != 0 ){
-						WRITE_FMT_LOG(LOG_ERR, "zmq_bind err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
-						assert(!err);
+				if ( !sockf->netw_socket ){
+					WRITE_LOG(LOG_ERR, "zmq_socket return NULL");
+					free(sockf), sockf=NULL;
+				}
+				else{
+					int err = ERR_OK;
+					switch(db_record->method){
+					case EMETHOD_BIND:
+						WRITE_LOG(LOG_NET, "open socket: bind");
+						err= zmq_bind(sockf->netw_socket, db_record->endpoint);
+						WRITE_FMT_LOG(LOG_ERR, "zmq_bind status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
+						break;
+					case EMETHOD_CONNECT:
+						WRITE_LOG(LOG_NET, "open socket: connect");
+						err = zmq_connect(sockf->netw_socket, db_record->endpoint);
+						WRITE_FMT_LOG(LOG_NET, "zmq_connect status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
+						break;
+					default:
+						WRITE_LOG(LOG_ERR, "open socket: undefined sock method");
+						err = ERR_ERROR;
+						break;
 					}
-					else{
-						WRITE_LOG(LOG_ERR, "zmq_bind ok");
+
+					if ( err != ERR_OK ){
+						WRITE_LOG(LOG_ERR, "close opened socket, free sockf, because connect|bind failed");
+						zmq_close( sockf->netw_socket );
+						free(sockf), sockf = NULL;
 					}
-					break;
-				case EMETHOD_CONNECT:
-					WRITE_LOG(LOG_NET, "open socket: connect");
-					err = zmq_connect(sockf->netw_socket, db_record->endpoint);
-					if ( err != 0 ){
-						WRITE_FMT_LOG(LOG_NET, "zmq_connect err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
-						assert(!err);
-					}
-					else{
-						WRITE_LOG(LOG_ERR, "zmq_connect ok");
-					}
-					break;
-				default:
-					assert(0);
-					break;
 				}
 			}
-			add_sockf_copy_to_array(zpool, sockf);
+			if ( sockf ){
+				int err = add_sockf_copy_to_array(zpool, sockf);
+				if ( ERR_ALREADY_EXIST == err ){
+					WRITE_LOG(LOG_ERR, "misuse of socket pool");
+				}
+			}
 		}
 	}
-
 	return sockf;
 }
 
 
-void close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
+int close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
+	int err = ERR_OK;
 	assert(zpool);
-
+	assert(sockf);
+	WRITE_FMT_LOG(LOG_DEBUG, "fd=%d", sockf->fs_fd);
 	int zmq_sock_is_used_twice = 0;
 	for (int i=0; i < zpool->count_max; i++){
 		if ( !zpool->sockf_array[i].unused && zpool->sockf_array[i].netw_socket == sockf->netw_socket )
 			zmq_sock_is_used_twice++;
 	}
 	if ( zmq_sock_is_used_twice > 1 ){
-		sockf->fs_fd = -1;
-		sockf->netw_socket = NULL;
 		if ( sockf->tempbuf ){
 			free(sockf->tempbuf->buf), sockf->tempbuf->buf=NULL;
 			free(sockf->tempbuf), sockf->tempbuf = NULL;
@@ -171,15 +262,12 @@ void close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
 	}else{
 		WRITE_LOG(LOG_NET, "zmq socket closing...");
 		int err = zmq_close( sockf->netw_socket );
-		if ( err != 0 ){
-			WRITE_FMT_LOG(LOG_NET, "zmq_close err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
-			assert(!err);
-		}
-		else{
-			WRITE_LOG(LOG_ERR, "zmq_close ok");
-		}
+		WRITE_FMT_LOG(LOG_NET, "zmq_close status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
 	}
-	remove_sockf_from_array_by_fd(zpool, sockf->fs_fd );
+	if ( ERR_OK == err )
+		return remove_sockf_from_array_by_fd(zpool, sockf->fs_fd );
+	else
+		return err;
 }
 
 
@@ -188,7 +276,7 @@ ssize_t  write_sockf(struct sock_file_t *sockf, const char *buf, size_t size){
 		zmq_msg_t msg;
 		zmq_msg_init_size (&msg, size);
 		memcpy (zmq_msg_data (&msg), buf, size);
-		WRITE_FMT_LOG(LOG_NET, "zmq_sending buf %d bytes...", (int)size );
+		WRITE_FMT_LOG(LOG_NET, "zmq_sending fd=%d buf %d bytes...", sockf->fs_fd, (int)size );
 		int err = zmq_send ( sockf->netw_socket, &msg, 0);
 		if ( err != 0 ){
 			WRITE_FMT_LOG(LOG_ERR, "zmq_send err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
@@ -237,7 +325,7 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 		do{
 			zmq_msg_t msg;
 			zmq_msg_init (&msg);
-			WRITE_FMT_LOG(LOG_NET, "zmq_recv %d bytes...", (int)count);
+			WRITE_FMT_LOG(LOG_NET, "zmq_recv fd=%d, %d bytes...", sockf->fs_fd, (int)count);
 			int err = zmq_recv ( sockf->netw_socket, &msg, 0);
 			if ( 0 != err ){
 				/*read error*/
@@ -263,18 +351,5 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 	return bytes_read+bytes;
 }
 
-void zeromq_term(struct zeromq_pool* zpool){
-	assert(zpool);
-	/*destroy zmq context*/
-	if (zpool->context){
-		WRITE_LOG(LOG_ERR, "zmq_term trying...\n");fflush(0);
-		int err= zmq_term(zpool->context);
-		if ( err != 0 ){
-			WRITE_FMT_LOG(LOG_ERR, "zmq_term err %d, errno %d errtext %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
-		}
-		else{
-			WRITE_LOG(LOG_ERR, "zmq_term ok\n");
-		}
-	}
-}
+
 

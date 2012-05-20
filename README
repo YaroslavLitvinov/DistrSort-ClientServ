@@ -16,7 +16,8 @@ then handled data would be send by ZeroMQ networking socket using transport and 
 To get more information about sorting job see "Distributed-Sort" on github. For example it's an actual diagram: 
 https://github.com/YaroslavLitvinov/Distributed-Sort/blob/master/zeromq-diagram.pdf
 
-=========================== install third-party Packages =========================
+=========================== Required Packages =========================
+Ubuntu Linux 11.x 64bit
 Required packages: ZeroMQ 2.1.x, Fuse 2.9.0;
 Recommended package : sqlite-autoconf-3071100, Executive file sqlite3 can be useful to create and insert data into databases; 
 sqlite-amalgamation already is part of project and located in sqlite dir;  
@@ -29,6 +30,8 @@ cd sqlite-autoconf-3071200/
 make
 sudo make install
 
+echo install packages required by zeromq
+sudo apt-get install uuid-dev
 echo Install zeromq
 wget http://download.zeromq.org/zeromq-2.2.0.tar.gz
 tar xvfz zeromq-2.2.0.tar.gz
@@ -37,14 +40,12 @@ cd zeromq-2.2.0
 make
 sudo make install
 
-Download fuse, by link http://sourceforge.net/projects/fuse/files/latest/download?source=files
-tar xvfz fuse-2.9.0.tar.gz 
-./configure
-make
-sudo make install
+echo Install fuse
+sudo apt-get install libfuse-dev
 
 ============================= Run Distributed Sort =========================
 Currently by default you can build and run sorting with 5 source and 5 destination nodes;
+Explicitly, you are need to set path to sqlite-autoconf in db_creator.sh
 You can run Distributed sort folowing this, in terminal >
 make
 echo create db files

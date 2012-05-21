@@ -33,6 +33,8 @@ public:
 	void TestSockfOpenClose();
 	void TestSockfCommunicationPushPull();
 	void TestSockfCommunicationReqRep();
+	void TestSockfIfZmqInitFailed();
+	void TestSockfBadArgs();
 
 protected:
   // Sets up the test fixture.
@@ -308,6 +310,62 @@ TEST_F(ZmqNetwTests, TestSockfCommunicationReqRep) {
 	free(zpool);
 }
 
+
+TEST_F(ZmqNetwTests, TestSockfIfZmqInitFailed) {
+	int test_items_count = 2;
+	struct zeromq_pool *zpool = (struct zeromq_pool *) malloc(sizeof(struct zeromq_pool *));
+	EXPECT_EQ(ERR_OK, init_zeromq_pool(zpool) );
+	/*term zmq context, emulate zmq init failed*/
+	zmq_term(zpool->context);
+	/*create db_records struct*/
+	struct db_records_t db_records = {NULL, 0, DB_RECORDS_GRANULARITY, 0};
+	db_records.array = (struct db_record_t*)malloc( sizeof(struct db_record_t)*db_records.maxcount );
+	memset(db_records.array, '\0', sizeof(struct db_record_t)*db_records.maxcount);
+	/*add test item into db_records*/
+	struct db_record_t *record1 = &db_records.array[db_records.count++];
+	/*set some record1 data*/
+	record1->fd = 3;
+	record1->fmode = 'w';
+	record1->ftype = EFILE_MSQ;
+	record1->method = EMETHOD_CONNECT;
+	record1->endpoint = (char*)__endpoint1;
+	record1->sock = ZMQ_PUSH;
+	/*records added*/
+	struct sock_file_t* w_sockf = open_sockf( zpool, &db_records, 3);
+	/*illustrate that opening is failed*/
+	EXPECT_EQ( (struct sock_file_t*)NULL, w_sockf);
+	EXPECT_EQ( ERR_BAD_ARG, close_sockf(zpool, w_sockf) );
+	EXPECT_EQ(ERR_OK, zeromq_term(zpool) );
+	free(zpool);
+}
+
+
+TEST_F(ZmqNetwTests, TestSockfBadArgs) {
+	EXPECT_EQ( ERR_BAD_ARG, init_zeromq_pool(NULL) );
+	EXPECT_EQ( (struct sock_file_t*)NULL, sockf_by_fd(NULL, 0) );
+	struct zeromq_pool* zpool = NULL;
+	struct sock_file_t* sockf = NULL;
+	struct db_records_t* db_records = NULL;
+	EXPECT_EQ( ERR_BAD_ARG, add_sockf_copy_to_array( zpool, sockf) );
+	EXPECT_EQ( ERR_BAD_ARG, remove_sockf_from_array_by_fd(zpool, 0) );
+	EXPECT_EQ( ERR_BAD_ARG, close_sockf(zpool, sockf) );
+	zpool = (struct zeromq_pool*)malloc(sizeof(struct zeromq_pool));
+	db_records = (struct db_records_t*)malloc(sizeof(struct db_records_t));
+	memset(db_records, '\0', sizeof(struct db_records_t));
+	/*zpool array member is not properly configured*/
+	EXPECT_EQ( ERR_BAD_ARG, add_sockf_copy_to_array( zpool, sockf) );
+	EXPECT_EQ( ERR_BAD_ARG, remove_sockf_from_array_by_fd( zpool, 0) );
+	EXPECT_EQ( (struct sock_file_t*)NULL, open_sockf( NULL, NULL, 0) );
+	/*db_records not yet properly initialized*/
+	EXPECT_EQ( (struct sock_file_t*)NULL, open_sockf( zpool, db_records, 0) );
+	EXPECT_EQ(0, write_sockf(NULL, NULL, 1000000) );
+	sockf = (struct sock_file_t*)malloc(sizeof(struct sock_file_t));
+	memset(sockf, '\0', sizeof(struct sock_file_t) );
+	EXPECT_EQ(0, write_sockf(sockf, "testdata", 8) );
+	EXPECT_EQ(0, read_sockf(NULL, NULL, 1000000) );
+	char *test = (char*)malloc(8);
+	EXPECT_EQ(0, read_sockf(sockf, test, 8) );
+}
 
 
 int main(int argc, char **argv) {

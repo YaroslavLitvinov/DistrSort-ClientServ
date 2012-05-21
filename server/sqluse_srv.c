@@ -33,22 +33,14 @@
 
 
 struct db_record_t* match_db_record_by_fd(struct db_records_t *records, int fd){
-	assert(records);
+	if ( !records ) return NULL;
+	if ( !records->array ) return NULL;
 	for ( int i=0; i < records->count; i++ ){
 		if ( records->array[i].fd == fd )
 			return &records->array[i];
 	}
 	return NULL;
 }
-
-
-struct db_record_t* match_db_record_by_endpoint_mode( struct db_records_t *records, const char* endpoint, char mode ){
-	assert(records);
-	for ( int i=0; i < records->count; i++ ){
-		if ( records->array[i].fmode == mode && !strcmp(records->array[i].endpoint, endpoint ) )
-			return &records->array[i];
-	}
-	return NULL;}
 
 int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azColName){
 	if ( file_records ){

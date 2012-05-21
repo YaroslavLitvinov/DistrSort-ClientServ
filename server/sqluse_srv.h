@@ -30,7 +30,6 @@ struct db_record_t{
 
 enum {DB_RECORDS_GRANULARITY=20};
 struct db_record_t* match_db_record_by_fd(struct db_records_t *records, int fd);
-struct db_record_t* match_db_record_by_endpoint_mode( struct db_records_t *records, const char* endpoint, char mode );
 int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azColName);
 int get_all_records_from_dbtable(const char *path, const char *nodename, struct db_records_t *dbrecords);
 

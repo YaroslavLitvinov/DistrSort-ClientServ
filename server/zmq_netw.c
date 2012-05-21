@@ -18,8 +18,10 @@
 
 
 int init_zeromq_pool(struct zeromq_pool * zpool){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p", zpool);
+	if ( !zpool ) return ERR_BAD_ARG;
 	int err = 0;
-	assert(zpool);
+
 	/*create zmq context*/
 	zpool->context = zmq_init(1);
 	if ( zpool->context ){
@@ -27,7 +29,7 @@ int init_zeromq_pool(struct zeromq_pool * zpool){
 		/*allocated memory for array should be free at the zeromq_term */
 		zpool->sockf_array = malloc(zpool->count_max * sizeof(struct sock_file_t));
 		if ( zpool->sockf_array ) {
-			memset(zpool->sockf_array, '\0', sizeof(struct sock_file_t)*zpool->count_max);
+			memset(zpool->sockf_array, '\0', zpool->count_max*sizeof(struct sock_file_t));
 			for (int i=0; i < zpool->count_max; i++)
 				zpool->sockf_array[i].unused = 1;
 			err = ERR_OK;
@@ -46,6 +48,7 @@ int init_zeromq_pool(struct zeromq_pool * zpool){
 }
 
 int zeromq_term(struct zeromq_pool* zpool){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p", zpool);
 	int err = ERR_OK;
 	assert(zpool);
 	/*free array*/
@@ -76,16 +79,19 @@ int zeromq_term(struct zeromq_pool* zpool){
 }
 
 struct sock_file_t* sockf_by_fd(struct zeromq_pool* zpool, int fd){
-	for (int i=0; i < zpool->count_max; i++)
-		if ( !zpool->sockf_array[i].unused && zpool->sockf_array[i].fs_fd == fd )
-			return &zpool->sockf_array[i];
-	return 0;
+	if ( zpool && zpool->sockf_array ){
+		for (int i=0; i < zpool->count_max; i++)
+			if ( !zpool->sockf_array[i].unused && zpool->sockf_array[i].fs_fd == fd )
+				return &zpool->sockf_array[i];
+	}
+	return NULL;
 }
 
 int add_sockf_copy_to_array(struct zeromq_pool* zpool, struct sock_file_t* sockf){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p", zpool, sockf);
 	int err = ERR_OK;
-	assert(zpool);
-	assert(sockf);
+	if ( !zpool || !sockf ) return ERR_BAD_ARG;
+	if ( !zpool->sockf_array) return ERR_BAD_ARG;
 	if( sockf_by_fd(zpool, sockf->fs_fd) ) return ERR_ALREADY_EXIST;
 
 	struct sock_file_t* sockf_add = NULL;
@@ -117,8 +123,10 @@ int add_sockf_copy_to_array(struct zeromq_pool* zpool, struct sock_file_t* sockf
 
 
 int remove_sockf_from_array_by_fd(struct zeromq_pool* zpool, int fd){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p", zpool);
+	if ( !zpool ) return ERR_BAD_ARG;
+	if ( !zpool->sockf_array ) return ERR_BAD_ARG;
 	int err = ERR_NOT_FOUND;
-	assert(zpool);
 	for (int i=0; i < zpool->count_max; i++)
 		if ( zpool->sockf_array[i].fs_fd == fd){
 			zpool->sockf_array[i].unused = 1;
@@ -130,6 +138,7 @@ int remove_sockf_from_array_by_fd(struct zeromq_pool* zpool, int fd){
 
 
 struct sock_file_t* get_dual_sockf(struct zeromq_pool* zpool, struct db_records_t *db_records, int fd){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p", zpool, db_records);
 	/*search existing dual direction socket*/
 	struct sock_file_t *dual_sockf = NULL;
 	struct db_record_t* record1 = NULL;
@@ -163,7 +172,9 @@ struct sock_file_t* get_dual_sockf(struct zeromq_pool* zpool, struct db_records_
 
 
 struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *db_records, int fd){
-	assert(db_records);
+	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p, %d", zpool, db_records, fd);
+	if (!zpool || !db_records) return NULL;
+
 	struct sock_file_t *sockf = sockf_by_fd(zpool, fd );
 	if ( sockf ) {
 		/*file with predefined descriptor already opened, just return socket*/
@@ -185,6 +196,7 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 			WRITE_LOG(LOG_ERR, "sockf malloc NULL");
 		}
 		else{
+			memset(sockf, '\0', sizeof(struct sock_file_t));
 			sockf->fs_fd = db_record->fd;
 			sockf->sock_type = db_record->sock;
 			sockf->tempbuf = NULL;
@@ -244,9 +256,9 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 
 
 int close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p", zpool, sockf);
 	int err = ERR_OK;
-	assert(zpool);
-	assert(sockf);
+	if ( !zpool || !sockf ) return ERR_BAD_ARG;
 	WRITE_FMT_LOG(LOG_DEBUG, "fd=%d", sockf->fs_fd);
 	int zmq_sock_is_used_twice = 0;
 	for (int i=0; i < zpool->count_max; i++){
@@ -272,27 +284,28 @@ int close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
 
 
 ssize_t  write_sockf(struct sock_file_t *sockf, const char *buf, size_t size){
-	if ( sockf ){
-		zmq_msg_t msg;
-		zmq_msg_init_size (&msg, size);
-		memcpy (zmq_msg_data (&msg), buf, size);
-		WRITE_FMT_LOG(LOG_NET, "zmq_sending fd=%d buf %d bytes...", sockf->fs_fd, (int)size );
-		int err = zmq_send ( sockf->netw_socket, &msg, 0);
-		if ( err != 0 ){
-			WRITE_FMT_LOG(LOG_ERR, "zmq_send err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
-			assert(!err);
-		}
-		else{
-			WRITE_LOG(LOG_NET, "zmq_send ok");
-		}
-		zmq_msg_close (&msg);
-		return size;
+	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p, %d", sockf, buf, (int)size);
+	if ( !sockf || !buf || !size ) return 0;
+	zmq_msg_t msg;
+	zmq_msg_init_size (&msg, size);
+	memcpy (zmq_msg_data (&msg), buf, size);
+	WRITE_FMT_LOG(LOG_NET, "zmq_sending fd=%d buf %d bytes...", sockf->fs_fd, (int)size );
+	int err = zmq_send ( sockf->netw_socket, &msg, 0);
+	if ( err != 0 ){
+		WRITE_FMT_LOG(LOG_ERR, "zmq_send err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
+		size = 0; /*nothing write*/
 	}
-	else return 0;
+	else{
+		WRITE_LOG(LOG_NET, "zmq_send ok");
+	}
+	zmq_msg_close (&msg);
+	return size;
 }
 
 
 ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p, %d", sockf, buf, (int)count);
+	if ( !sockf || !buf || !count ) return 0;
 	/*use sockf->tempbuf to save received results if user received more data than can be write into buf
 	 * Data from temp buf should be readed at next call of read*/
 	int bytes_read = 0;
@@ -351,5 +364,11 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 	return bytes_read+bytes;
 }
 
+
+int open_all_comm_files(struct zeromq_pool* zpool, struct db_records_t *db_records){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p", zpool, db_records);
+	int err = ERR_OK;
+	return err;
+}
 
 

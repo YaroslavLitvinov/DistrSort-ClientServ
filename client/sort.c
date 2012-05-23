@@ -16,6 +16,7 @@
 #include <sys/types.h> //pid_t
 #include <unistd.h> //getpid()
 
+#define CRC_ATOM 10000000
 
 void copy_array( BigArrayPtr dst_array, const BigArrayPtr src_array, int array_len );
 BigArrayPtr alloc_copy_array( const BigArrayPtr array, int array_len );
@@ -118,12 +119,12 @@ void print_array(const char* text, BigArrayPtr array, int len){
 uint32_t array_crc( BigArrayPtr array, int len ){
 	uint32_t crc = 0;
 	if ( len >=1 ){
-		crc = (crc+array[0]) % 1000000;
+		crc = (crc+array[0]%CRC_ATOM) % CRC_ATOM;
 	}
 	else return 1; //empty array always sorted
 	for ( int i=1; i < len; i++ )
 	{
-		crc = (crc+array[i]) % 1000000;
+		crc = (crc+array[i]%CRC_ATOM) % CRC_ATOM;
 	}
 	return crc;
 }
@@ -131,24 +132,36 @@ uint32_t array_crc( BigArrayPtr array, int len ){
 int test_sort_result( const BigArrayPtr unsorted, const BigArrayPtr sorted, int len ){
 	uint32_t unsorted_crc = 0;
 	uint32_t sorted_crc = 0;
-	int initial;
+	uint32_t initial;
 	if ( len >=1 ){
 		initial = sorted[0];
-		unsorted_crc = (unsorted_crc+unsorted[0]) % 1000000;
-		sorted_crc = (sorted_crc+sorted[0]) % 1000000;
+		unsorted_crc = (unsorted_crc+unsorted[0]% CRC_ATOM) % CRC_ATOM;
+		sorted_crc = (sorted_crc+sorted[0]% CRC_ATOM) % CRC_ATOM;
 	}
 	else return 1;
 	for ( int i=1; i < len; i++ ){
-		unsorted_crc = (unsorted_crc+unsorted[i]) % 1000000;
-		sorted_crc = (sorted_crc+sorted[i]) % 1000000;
+		if ( i == 44055 ){
+			WRITE_FMT_LOG(LOG_DEBUG, "item for bad sort %u, %u", sorted[i], unsorted[i]);
+		}
 
-		if ( initial > sorted[i] ) return 0;
+		unsorted_crc = (unsorted_crc+unsorted[i]% CRC_ATOM) % CRC_ATOM;
+		sorted_crc = (sorted_crc+sorted[i]% CRC_ATOM) % CRC_ATOM;
+
+		if ( initial > sorted[i] ){
+			WRITE_FMT_LOG(LOG_ERR, "initial %u > sorted[i] %u", initial, sorted[i]);
+			return 0;
+		}
 		else initial = sorted[i];
 	}
 
 	//crc test
-	if ( unsorted_crc != sorted_crc )
+	if ( unsorted_crc != sorted_crc ){
+		WRITE_FMT_LOG(LOG_ERR, "CRC_FAILED %u %u", unsorted_crc, sorted_crc);
 		return 0;
+	}
+	else{
+		WRITE_FMT_LOG(LOG_ERR, "CRC_OK %u", sorted_crc);
+	}
 
 	return 1;
 }

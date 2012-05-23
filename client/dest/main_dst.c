@@ -53,6 +53,21 @@ int main(int argc, char *argv[]){
 			unsorted_array, ARRAY_ITEMS_COUNT, SRC_NODES_COUNT );
 
 	sorted_array = alloc_merge_sort( unsorted_array, ARRAY_ITEMS_COUNT );
+
+	/*save sorted array to output file*/
+	char outputfile[100];
+	memset(outputfile, '\0', 100);
+	sprintf(outputfile, DEST_FILE_FMT, nodeid );
+	int destfd = open(outputfile, O_WRONLY|O_CREAT);
+	if ( destfd >= 0 ){
+		const size_t data_size = sizeof(BigArrayItem)*ARRAY_ITEMS_COUNT;
+		if ( sorted_array ){
+			const ssize_t wrote = write(destfd, sorted_array, data_size);
+			assert(wrote == data_size );
+		}
+		close(destfd);
+	}
+
 	struct file_record_t* results_w_record = match_file_record_by_fd( &file_records, DEST_FD_WRITE_SORT_RESULT);
 	assert(results_w_record);
 	write_sort_result( results_w_record->fpath, nodeid, sorted_array, ARRAY_ITEMS_COUNT );

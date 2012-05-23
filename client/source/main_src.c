@@ -24,6 +24,7 @@
 
 int main(int argc, char *argv[]){
 	struct file_records_t file_records;
+	int sourcefd = -1;
 	if ( argc > 2 ){
 		char logname[50];
 		sprintf(logname, "%s%s%s.log", CLIENT_LOG, SOURCE, argv[2]);
@@ -42,12 +43,33 @@ int main(int argc, char *argv[]){
 
 	BigArrayPtr unsorted_array = NULL;
 	BigArrayPtr partially_sorted_array = NULL;
+	/*get unsorted data*/
+	char inputfile[100];
+	memset(inputfile, '\0', 100);
+	sprintf(inputfile, SOURCE_FILE_FMT, nodeid );
+	sourcefd = open(inputfile, O_RDONLY);
+	if ( sourcefd >= 0 ){
+		const size_t data_size = sizeof(BigArrayItem)*ARRAY_ITEMS_COUNT;
+		unsorted_array = malloc( data_size );
+		if ( unsorted_array ){
+			const ssize_t readed = read(sourcefd, unsorted_array, data_size);
+			assert(readed == data_size );
+		}
+		close(sourcefd);
+	}
+	else{
+		WRITE_FMT_LOG(LOG_ERR, "Can not open input file %s", inputfile);
+		exit(0);
+	}
+
+	/*sort data locally*/
+	partially_sorted_array = alloc_merge_sort( unsorted_array, ARRAY_ITEMS_COUNT );
 
 	//if first part of sorting in single thread are completed
-	if ( run_sort( &unsorted_array, &partially_sorted_array, ARRAY_ITEMS_COUNT ) ){
+	if ( test_sort_result( unsorted_array, partially_sorted_array, ARRAY_ITEMS_COUNT ) ){
 		//uint32_t crc = array_crc( partially_sorted_array, ARRAY_ITEMS_COUNT );
 		if ( ARRAY_ITEMS_COUNT ){
-			WRITE_FMT_LOG(LOG_UI, "Single process sorting complete min=%d, max=%d: TEST OK.\n",
+			WRITE_FMT_LOG(LOG_UI, "Single process sorting complete min=%u, max=%u: TEST OK.\n",
 					partially_sorted_array[0], partially_sorted_array[ARRAY_ITEMS_COUNT-1] );
 		}
 

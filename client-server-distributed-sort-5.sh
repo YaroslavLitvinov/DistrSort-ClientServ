@@ -24,7 +24,9 @@ for number in $SRC_NODES_LIST
 do
 	DIR=$1/$number
 	mkdir -p $DIR
+	rm "$number"input.data
 	echo mkdir $DIR
+	#dd if=/dev/urandom of="$number"data/input.data bs=4000 count=1000
 	gnome-terminal --geometry=80x20 -t "server source $DIR" -x sh -c "./zf-server -s -odirect_io -d $DIR source $number"
 done
 

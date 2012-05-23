@@ -10,6 +10,8 @@
 
 #define CLIENT_LOG "log/client\0"
 #define SERVER_LOG "log/server\0"
+#define SOURCE_FILE_FMT "data/%dinput.data"
+#define DEST_FILE_FMT "data/%doutput.data"
 
 #define DB_PATH "client_dsort.db\0"
 #define SERVER_DB_PATH "server_dsort.db"
@@ -24,7 +26,6 @@
 #ifdef FUSE_CLIENT
 	#define FUSE_IO_MAX_CHUNK_SIZE (100*1024)
 #endif
-
 
 #define ARRAY_ITEMS_COUNT 1000000
 #define SRC_NODES_COUNT 5

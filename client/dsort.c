@@ -29,6 +29,20 @@ sortresult_comparator( const void *m1, const void *m2 )
 	return 0;
 }
 
+int
+histogram_srcid_comparator( const void *m1, const void *m2 ){
+
+	const struct Histogram *t1= (struct Histogram* const)(m1);
+	const struct Histogram *t2= (struct Histogram* const)(m2);
+
+	if ( t1->src_nodeid < t2->src_nodeid )
+		return -1;
+	else if ( t1->src_nodeid > t2->src_nodeid )
+		return 1;
+	else return 0;
+	return 0;
+}
+
 void
 print_histogram( const HistogramArrayPtr histogram, size_t len ){
 	for ( int j=0; j < len; j++ ){

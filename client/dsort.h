@@ -13,6 +13,8 @@
 
 int
 sortresult_comparator( const void *m1, const void *m2 );
+int
+histogram_srcid_comparator( const void *m1, const void *m2 );
 
 HistogramArrayPtr
 alloc_histogram_array_get_len(

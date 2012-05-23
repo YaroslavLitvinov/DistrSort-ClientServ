@@ -4,6 +4,7 @@
  *  Date: 7.03.2012
  */
 
+#include <limits.h>
 #include <stdlib.h>
 #include <zmq.h>
 
@@ -136,7 +137,6 @@ TEST_F(ZmqNetwTests, TestSockfArrayAddDuplicateditems) {
 	WRITE_LOG(LOG_DEBUG, "free array..");
 	FreeArrayPoolNoZmq(pool);
 	WRITE_LOG(LOG_DEBUG, "free array OK");
-	WRITE_LOG(LOG_DEBUG, "create array");
 }
 
 TEST_F(ZmqNetwTests, TestSockfArrayFinditems) {
@@ -188,9 +188,21 @@ TEST_F(ZmqNetwTests, TestSockfOpenClose) {
 	record->endpoint = (char*) __endpoint1;
 	record->sock = ZMQ_PUSH;
 	/*records added*/
+	/*open socket with bad method*/
+	record->method = EMETHOD_UNEXPECTED;
 	struct sock_file_t* sockf = open_sockf( zpool, &db_records, 3);
+	EXPECT_EQ( (struct sock_file_t*)NULL, sockf);
+	/*open normal socket*/
+	record->method = EMETHOD_CONNECT;
+	sockf = open_sockf( zpool, &db_records, 3);
 	EXPECT_NE( (struct sock_file_t*)NULL, sockf);
-	close_sockf(zpool, sockf);
+	/*open twice the same file descriptor socket*/
+	sockf = open_sockf( zpool, &db_records, 3);
+	EXPECT_NE( (struct sock_file_t*)NULL, sockf );
+	/*test close sockf*/
+	EXPECT_EQ( ERR_OK, close_sockf(zpool, sockf) );
+	/*close sockf twice*/
+	EXPECT_EQ( ERR_OK, close_sockf(zpool, sockf) );
 	EXPECT_EQ(ERR_OK, zeromq_term(zpool) );
 	free(zpool);
 }
@@ -228,9 +240,15 @@ TEST_F(ZmqNetwTests, TestSockfCommunicationPushPull) {
 	char *buf = alloc_fill_random(TEST_DATA_SIZE);
 	char *buf2 = (char*)malloc(TEST_DATA_SIZE);
 	if ( buf ){
-		/*write sockf*/
+		/*write1 sockf*/
 		EXPECT_EQ( TEST_DATA_SIZE, write_sockf(w_sockf, buf, TEST_DATA_SIZE) );
 		EXPECT_EQ( TEST_DATA_SIZE, read_sockf(r_sockf, buf2, TEST_DATA_SIZE) );
+		EXPECT_EQ( 0, strncmp(buf, buf2, TEST_DATA_SIZE) );
+		/*write2 sockf*/
+		memset(buf2, '\0', TEST_DATA_SIZE);
+		EXPECT_EQ( TEST_DATA_SIZE, write_sockf(w_sockf, buf, TEST_DATA_SIZE) );
+		EXPECT_EQ( TEST_DATA_SIZE/2, read_sockf(r_sockf, buf2, TEST_DATA_SIZE/2) );
+		EXPECT_EQ( TEST_DATA_SIZE/2, read_sockf(r_sockf, buf2+TEST_DATA_SIZE/2, TEST_DATA_SIZE/2) );
 		EXPECT_EQ( 0, strncmp(buf, buf2, TEST_DATA_SIZE) );
 	}
 	close_sockf(zpool, w_sockf);
@@ -350,6 +368,7 @@ TEST_F(ZmqNetwTests, TestSockfBadArgs) {
 	EXPECT_EQ( ERR_BAD_ARG, remove_sockf_from_array_by_fd(zpool, 0) );
 	EXPECT_EQ( ERR_BAD_ARG, close_sockf(zpool, sockf) );
 	zpool = (struct zeromq_pool*)malloc(sizeof(struct zeromq_pool));
+	memset(zpool, '\0', sizeof(struct zeromq_pool));
 	db_records = (struct db_records_t*)malloc(sizeof(struct db_records_t));
 	memset(db_records, '\0', sizeof(struct db_records_t));
 	/*zpool array member is not properly configured*/
@@ -362,9 +381,15 @@ TEST_F(ZmqNetwTests, TestSockfBadArgs) {
 	sockf = (struct sock_file_t*)malloc(sizeof(struct sock_file_t));
 	memset(sockf, '\0', sizeof(struct sock_file_t) );
 	EXPECT_EQ(0, write_sockf(sockf, "testdata", 8) );
+	EXPECT_EQ(0, write_sockf(sockf, "testdata", -1) );
 	EXPECT_EQ(0, read_sockf(NULL, NULL, 1000000) );
 	char *test = (char*)malloc(8);
 	EXPECT_EQ(0, read_sockf(sockf, test, 8) );
+	EXPECT_EQ(0, read_sockf(sockf, test, -1) );
+	EXPECT_EQ( ERR_BAD_ARG, init_zeromq_pool(NULL) );
+	EXPECT_EQ( ERR_BAD_ARG, zeromq_term(NULL) );
+	zpool->sockf_array = (struct sock_file_t*) malloc(sizeof(struct sock_file_t));
+	EXPECT_NE( ERR_OK, zeromq_term(zpool) );
 }
 
 

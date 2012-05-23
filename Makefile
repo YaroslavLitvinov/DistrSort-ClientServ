@@ -1,16 +1,25 @@
+GCOV_FLAGS= --coverage -DDEBUG -g3
+#ABS path is needed to correct gcov, gcov is used to get test coverage for server side code
+ABS_PATH=$(shell pwd)/
 #used -std=gnu99 instead -std=c99 to do compile FUSE
 FUSE_C99=-std=gnu99 -D_POSIX_C_SOURCE=200809L
 FUSE_FLAGS=-D_FILE_OFFSET_BITS=64 -I/usr/local/include/fuse
 SQLITE_FLAGS=-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION
-DEBUG=-g -DLOG_ENABLE
+DEBUG=-g -DLOG_ENABLE $(GCOV_FLAGS)
 SRCNODE_INCL=-I. -Iclient -Iclient/source -Isqlite
 MANNODE_INCL=-I. -Iclient -Iclient/manager -Isqlite
 
 all: createdirs zf-server dst_node src_node man_node test_node tests/zmq_netw_test
 	tests/zmq_netw_test
-
+	
 createdirs:
-	mkdir -p obj log tests
+	mkdir -p obj log tests data
+
+gcov: clean all
+	tests/zmq_netw_test
+	lcov --directory . --capture --output-file app.info
+	genhtml --output-directory cov_htmp app.info
+	@echo run $(ABS_PATH)cov_htmp/index.html
 
 zf-server: obj/main.o obj/fs_inmem.o obj/sqlite3.o obj/sqluse_srv.o obj/zmq_netw.o obj/logfile.o
 	@gcc -o zf-server obj/main.o obj/fs_inmem.o obj/sqlite3.o obj/sqluse_srv.o obj/zmq_netw.o obj/logfile.o -I. -I./sqlite \
@@ -32,32 +41,32 @@ test_node: obj/main_test.o obj/sqluse_cli.o obj/sqlite3.o obj/logfile.o
 	@gcc -o test_node obj/main_test.o obj/sqluse_cli.o obj/sqlite3.o obj/logfile.o -Wall -std=c99 -lzmq $(DEBUG)
 	
 tests/zmq_netw_test: server/zmq_netw_test.cc obj/zmq_netw.o obj/logfile.o obj/sqluse_srv.o obj/sqlite3.o
-	@g++ -o tests/zmq_netw_test server/zmq_netw_test.cc obj/zmq_netw.o obj/logfile.o obj/sqluse_srv.o obj/sqlite3.o \
-	-lzmq -Lgtest -lgtest -I. -Igtest -Iserver $(DEBUG)
+	@g++ -o tests/zmq_netw_test $(ABS_PATH)server/zmq_netw_test.cc obj/zmq_netw.o obj/logfile.o obj/sqluse_srv.o \
+	obj/sqlite3.o -lzmq -Lgtest -lgtest -I. -Igtest -Iserver $(DEBUG)
 	
 
 #for all clients and server
 obj/sqlite3.o:
-	@gcc -c -o obj/sqlite3.o sqlite/sqlite3.c -I./sqlite $(SQLITE_FLAGS)
+	@gcc -c -o obj/sqlite3.o $(ABS_PATH)sqlite/sqlite3.c -I./sqlite $(SQLITE_FLAGS)
 
 obj/logfile.o: logfile.c logfile.h
-	@gcc -c -o obj/logfile.o logfile.c -I. -Wall $(DEBUG)
+	@gcc -c -o obj/logfile.o $(ABS_PATH)logfile.c -I. -Wall $(DEBUG)
 
 #server side
 obj/fs_inmem.o: server/fs_inmem.c
-	@gcc -c -o obj/fs_inmem.o server/fs_inmem.c -I. -I./server -Wall $(FUSE_FLAGS) $(FUSE_C99) $(DEBUG)
+	@gcc -c -o obj/fs_inmem.o $(ABS_PATH)server/fs_inmem.c -I. -I./server -Wall $(FUSE_FLAGS) $(FUSE_C99) $(DEBUG)
 
 #server side
 obj/main.o: server/main.c defines.h
-	@gcc -c -o obj/main.o server/main.c -I. -I./server -Wall $(FUSE_FLAGS) $(FUSE_C99) $(DEBUG)
+	@gcc -c -o obj/main.o $(ABS_PATH)server/main.c -I. -I./server -Wall $(FUSE_FLAGS) $(FUSE_C99) $(DEBUG)
 	
 #server side
 obj/sqluse_srv.o: server/sqluse_srv.c
-	@gcc -c -o obj/sqluse_srv.o server/sqluse_srv.c -I. -Iserver -Isqlite $(DEBUG) -Wall -std=c99
+	@gcc -c -o obj/sqluse_srv.o $(ABS_PATH)server/sqluse_srv.c -I. -Iserver -Isqlite $(DEBUG) -Wall -std=c99
 
 #server side
 obj/zmq_netw.o: server/zmq_netw.c
-	@gcc -c -o obj/zmq_netw.o server/zmq_netw.c -I. -Iserver $(DEBUG) -Wall -std=c99
+	@gcc -c -o obj/zmq_netw.o $(ABS_PATH)server/zmq_netw.c -I. -Iserver $(DEBUG) -Wall -std=c99
 
 #client side: any node
 obj/sqluse_cli.o: client/sqluse_cli.c defines.h
@@ -103,9 +112,14 @@ obj/histanlz.o: client/manager/histanlz.c defines.h
 obj/main_test.o: client/main_test.c
 	@gcc -c -o obj/main_test.o client/main_test.c  $(MANNODE_INCL) $(DEBUG) -Wall -std=c99
 
-clean:
+clean_gcov:
+	find -name "*.gcda" | xargs rm -f
+	find -name "*.gcno" | xargs rm -f
+	rm cov_htmp -f -r
+
+clean: clean_gcov
 	rm *.o -f
 	rm obj/*.o -f
-	rm zf-server test_node man_node src_node dst_node -f
+	rm zf-server test_node man_node src_node dst_node tests/zmq_netw_test -f
 	
 

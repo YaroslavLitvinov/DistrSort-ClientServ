@@ -12,9 +12,9 @@
 #include <zmq.h>
 
 #include <string.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 
 int init_zeromq_pool(struct zeromq_pool * zpool){
@@ -35,12 +35,16 @@ int init_zeromq_pool(struct zeromq_pool * zpool){
 			err = ERR_OK;
 		}
 		else{
-			/*no memory allocated*/
+			/*no memory allocated
+			 * This code section can't be covered by unit tests because it's not depends from zpool parameter;
+			 * sockf_array member is completely setups internally*/
 			WRITE_FMT_LOG(LOG_ERR, "%d bytes alloc error", (int)sizeof(struct sock_file_t));
 			err = ERR_NO_MEMORY;
 		}
 	}
 	else{
+		/* This code section can't be covered by unit tests because it's not depends from zpool parameter;
+		 * it's only can be produced as unexpected zeromq error*/
 		WRITE_FMT_LOG(LOG_ERR, "zmq_init err %d, errno %d errtext %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
 		err = ERR_ERROR;
 	}
@@ -48,15 +52,14 @@ int init_zeromq_pool(struct zeromq_pool * zpool){
 }
 
 int zeromq_term(struct zeromq_pool* zpool){
-	WRITE_FMT_LOG(LOG_DEBUG, "%p", zpool);
 	int err = ERR_OK;
-	assert(zpool);
+	WRITE_FMT_LOG(LOG_DEBUG, "%p", zpool);
+	if ( !zpool ) return ERR_BAD_ARG;
+
 	/*free array*/
 	if ( zpool->sockf_array ){
 		for ( int i=0; i < zpool->count_max; i++ ){
-			if ( zpool->sockf_array[i].tempbuf ){
-				free(zpool->sockf_array[i].tempbuf);
-			}
+			free(zpool->sockf_array[i].tempbuf);
 		}
 		free(zpool->sockf_array), zpool->sockf_array = NULL;
 	}
@@ -74,6 +77,10 @@ int zeromq_term(struct zeromq_pool* zpool){
 			zpool->context = NULL;
 			WRITE_LOG(LOG_ERR, "zmq_term ok\n");
 		}
+	}
+	else{
+		WRITE_LOG(LOG_ERR, "context error NULL");
+		err = ERR_ERROR;
 	}
 	return err;
 }
@@ -111,6 +118,8 @@ int add_sockf_copy_to_array(struct zeromq_pool* zpool, struct sock_file_t* sockf
 					zpool->sockf_array[i].unused = 1;
 			}
 			else{
+				/*no memory re allocated
+				 * This code section can't be covered by unit tests because it's system error*/
 				err = ERR_ERROR;
 				WRITE_LOG(LOG_ERR, "sockf_array realloc mem failed");
 			}
@@ -178,7 +187,7 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 	struct sock_file_t *sockf = sockf_by_fd(zpool, fd );
 	if ( sockf ) {
 		/*file with predefined descriptor already opened, just return socket*/
-		WRITE_FMT_LOG(LOG_MISC, "Existing socket: Trying toopen twice? %d", sockf->fs_fd);
+		WRITE_FMT_LOG(LOG_MISC, "Existing socket: Trying to open twice? %d", sockf->fs_fd);
 		return sockf;
 	}
 
@@ -193,6 +202,8 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 		/*create new socket record {sock_file_t}*/
 		sockf = malloc( sizeof(struct sock_file_t) );
 		if ( !sockf ){
+			/*no memory allocated
+			 * This code section can't be covered by unit tests because it's not depends from input params*/
 			WRITE_LOG(LOG_ERR, "sockf malloc NULL");
 		}
 		else{
@@ -245,8 +256,18 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 			}
 			if ( sockf ){
 				int err = add_sockf_copy_to_array(zpool, sockf);
-				if ( ERR_ALREADY_EXIST == err ){
-					WRITE_LOG(LOG_ERR, "misuse of socket pool");
+				if ( ERR_OK != err ){
+					/* This code section can't be covered by unit tests because it's system relative error
+					 * and additionaly function check ERR_ALREADY_EXIST case and return it*/
+					WRITE_FMT_LOG(LOG_ERR, "add_sockf_copy_to_array %d", err);
+					/*if socket opened and used by another sockf, then do not close it*/
+					if ( !dual_sockf ){
+						free(sockf->netw_socket);
+						free(sockf);
+					}
+					else{
+						zmq_close(sockf->netw_socket);
+					}
 				}
 			}
 		}
@@ -271,9 +292,10 @@ int close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
 			free(sockf->tempbuf), sockf->tempbuf = NULL;
 		}
 		WRITE_LOG(LOG_NET, "dual direction zmq socket should be closed later");
-	}else{
+	}else if( sockf->netw_socket ){
 		WRITE_LOG(LOG_NET, "zmq socket closing...");
 		int err = zmq_close( sockf->netw_socket );
+		sockf->netw_socket = NULL;
 		WRITE_FMT_LOG(LOG_NET, "zmq_close status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
 	}
 	if ( ERR_OK == err )
@@ -284,28 +306,37 @@ int close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
 
 
 ssize_t  write_sockf(struct sock_file_t *sockf, const char *buf, size_t size){
+	int err = 0;
+	ssize_t wrote = 0;
 	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p, %d", sockf, buf, (int)size);
-	if ( !sockf || !buf || !size ) return 0;
+	if ( !sockf || !buf || !size || size==SIZE_MAX ) return 0;
 	zmq_msg_t msg;
-	zmq_msg_init_size (&msg, size);
-	memcpy (zmq_msg_data (&msg), buf, size);
-	WRITE_FMT_LOG(LOG_NET, "zmq_sending fd=%d buf %d bytes...", sockf->fs_fd, (int)size );
-	int err = zmq_send ( sockf->netw_socket, &msg, 0);
+	err = zmq_msg_init_size (&msg, size);
 	if ( err != 0 ){
-		WRITE_FMT_LOG(LOG_ERR, "zmq_send err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
-		size = 0; /*nothing write*/
+		wrote = 0;
+		WRITE_FMT_LOG(LOG_ERR, "zmq_msg_init_size err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
 	}
 	else{
-		WRITE_LOG(LOG_NET, "zmq_send ok");
+		memcpy (zmq_msg_data (&msg), buf, size);
+		WRITE_FMT_LOG(LOG_NET, "zmq_sending fd=%d buf %d bytes...", sockf->fs_fd, (int)size );
+		err = zmq_send ( sockf->netw_socket, &msg, 0);
+		if ( err != 0 ){
+			WRITE_FMT_LOG(LOG_ERR, "zmq_send err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
+			wrote = 0; /*nothing sent*/
+		}
+		else{
+			wrote = size;
+			WRITE_LOG(LOG_NET, "zmq_send ok");
+		}
+		zmq_msg_close (&msg);
 	}
-	zmq_msg_close (&msg);
-	return size;
+	return wrote;
 }
 
 
 ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p, %d", sockf, buf, (int)count);
-	if ( !sockf || !buf || !count ) return 0;
+	if ( !sockf || !buf || !count || count==SIZE_MAX ) return 0;
 	/*use sockf->tempbuf to save received results if user received more data than can be write into buf
 	 * Data from temp buf should be readed at next call of read*/
 	int bytes_read = 0;

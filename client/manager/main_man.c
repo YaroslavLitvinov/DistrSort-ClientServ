@@ -48,6 +48,9 @@ int main(int argc, char *argv[]){
 	WRITE_LOG(LOG_DETAILED_UI, "Recv histograms OK");
 	//////////////////////////////////////////
 
+	/*Sort histograms by src_nodeid, because recv order is unexpected*/
+	qsort( histograms, SRC_NODES_COUNT, sizeof(struct Histogram), histogram_srcid_comparator );
+
 	WRITE_LOG(LOG_DETAILED_UI, "Analize histograms and request detailed histograms");
 	struct request_data_t** range = alloc_range_request_analize_histograms( &file_records,
 			ARRAY_ITEMS_COUNT, nodeid, histograms, SRC_NODES_COUNT );
@@ -90,7 +93,7 @@ int main(int argc, char *argv[]){
 			if ( !(results[i].max > results[i].min && results[i-1].max < results[i].min) )
 				sort_ok = 0;
 		}
-		WRITE_FMT_LOG(LOG_UI, "results[%d], nodeid=%d, min=%d, max=%d\n",
+		WRITE_FMT_LOG(LOG_UI, "results[%d], nodeid=%d, min=%u, max=%u\n",
 				i, results[i].nodeid, results[i].min, results[i].max);
 		fflush(0);
 	}

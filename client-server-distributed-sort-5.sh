@@ -11,22 +11,22 @@ then
 fi
 
 rm -f log/*.log
-mkdir /tmp/zmq
+mkdir -p /tmp/zmq
 
 echo run node servers
 
 DIR=$1/$MANAGER_NODE
 mkdir -p $DIR
 echo mkdir $DIR
-gnome-terminal --geometry=80x20 -t "server manager $DIR" -x sh -c "./zf-server -s -odirect_io -d $DIR manager $MANAGER_NODE"
+#gnome-terminal --geometry=80x20 -t "server manager $DIR" -x sh -c "./zf-server -s -odirect_io -d $DIR manager $MANAGER_NODE"
 
 for number in $SRC_NODES_LIST
 do
 	DIR=$1/$number
 	mkdir -p $DIR
-	rm "$number"input.data
+	rm data/"$number"input.data
 	echo mkdir $DIR
-	#dd if=/dev/urandom of="$number"data/input.data bs=4000 count=1000
+	dd if=/dev/urandom of=data/"$number"input.data bs=4000 count=1000
 	gnome-terminal --geometry=80x20 -t "server source $DIR" -x sh -c "./zf-server -s -odirect_io -d $DIR source $number"
 done
 

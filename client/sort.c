@@ -16,7 +16,6 @@
 #include <sys/types.h> //pid_t
 #include <unistd.h> //getpid()
 
-#define CRC_ATOM 10000000
 
 void copy_array( BigArrayPtr dst_array, const BigArrayPtr src_array, int array_len );
 BigArrayPtr alloc_copy_array( const BigArrayPtr array, int array_len );
@@ -140,10 +139,6 @@ int test_sort_result( const BigArrayPtr unsorted, const BigArrayPtr sorted, int 
 	}
 	else return 1;
 	for ( int i=1; i < len; i++ ){
-		if ( i == 44055 ){
-			WRITE_FMT_LOG(LOG_DEBUG, "item for bad sort %u, %u", sorted[i], unsorted[i]);
-		}
-
 		unsorted_crc = (unsorted_crc+unsorted[i]% CRC_ATOM) % CRC_ATOM;
 		sorted_crc = (sorted_crc+sorted[i]% CRC_ATOM) % CRC_ATOM;
 

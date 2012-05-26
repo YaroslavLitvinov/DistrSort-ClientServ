@@ -11,6 +11,8 @@
 #include "distr_common.h"
 
 
+void
+read_crcs(const char *readf, uint32_t *crc_array);
 
 void
 recv_histograms( const char *readf, struct Histogram *histograms, int wait_histograms_count );

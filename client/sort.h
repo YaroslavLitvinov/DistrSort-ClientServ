@@ -11,6 +11,8 @@
 #include <stdint.h> //uint32_t
 #include <stddef.h> //size_t
 
+#define CRC_ATOM 10000000
+
 typedef uint32_t* BigArrayPtr;
 typedef uint32_t  BigArrayItem;
 

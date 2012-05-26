@@ -17,6 +17,22 @@
 #include <stdio.h>
 #include <unistd.h>
 
+/*reading crc from every source node, number of src nodes is defined by SRC_NODES_COUNT
+ *READ 1x uint32_t, crc*/
+void
+read_crcs(const char *readf, uint32_t *crc_array){
+	int fdr = open(readf, O_RDONLY);
+	WRITE_FMT_LOG(LOG_NET, "Reading read_crcs %d count", SRC_NODES_COUNT);
+	int bytes=0;
+	for( int i=0; i < SRC_NODES_COUNT; i++ ){
+		WRITE_FMT_LOG(LOG_NET, "Reading crc #%d", i);
+		bytes=read(fdr, (char*) &crc_array[i], sizeof(uint32_t) );
+		WRITE_FMT_LOG(LOG_NET, "%d bytes readed crc=%u", bytes, crc_array[i]);
+	}
+	WRITE_LOG(LOG_NET, "crc read ok");
+	close(fdr);
+}
+
 
 /*READ 1x struct packet_data_t
  *READ array_len x  HistogramArrayItem, array*/

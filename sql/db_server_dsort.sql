@@ -16,6 +16,7 @@ insert into channels values('source', 'msq', 'REQ', 'connect', 'ipc:///tmp/zmq/r
 insert into channels values('source', 'msq', 'REQ', 'connect', 'ipc:///tmp/zmq/ranges-9', 'r', '/in/ranges2', 14);
 insert into channels values('source', 'msq', 'REQ', 'connect', 'ipc:///tmp/zmq/ranges-10', 'r', '/in/ranges3', 15);
 insert into channels values('source', 'msq', 'REQ', 'connect', 'ipc:///tmp/zmq/ranges-11', 'r', '/in/ranges4', 16);
+insert into channels values('source', 'msq', 'PUSH', 'connect', 'ipc:///tmp/zmq/crc', 'w', '/out/crc', 17);
 
 insert into channels values('dest', 'std', 'STDIN', '', '', 'r', '/in/stdin', 0);
 insert into channels values('dest', 'std', 'STDOUT', '', '', 'w', '/out/stdout', 1);
@@ -44,6 +45,7 @@ insert into channels values('manager', 'msq', 'PUSH', 'connect', 'ipc:///tmp/zmq
 insert into channels values('manager', 'msq', 'PUSH', 'connect', 'ipc:///tmp/zmq/range-request-5', 'w', '/out/range-request3', 17);
 insert into channels values('manager', 'msq', 'PUSH', 'connect', 'ipc:///tmp/zmq/range-request-6', 'w', '/out/range-request4', 18);
 insert into channels values('manager', 'msq', 'PULL', 'bind', 'ipc:///tmp/zmq/sort-result', 'r', '/in/sorted_range', 19);
+insert into channels values('manager', 'msq', 'PULL', 'bind', 'ipc:///tmp/zmq/crc', 'r', '/in/crc', 20);
 
 insert into channels values('test1PUSH', 'msq', 'PUSH', 'connect', 'ipc:///tmp/zmq/test1', 'w', '/out/test1', 10);
 insert into channels values('test1PULL', 'msq', 'PULL', 'bind', 'ipc:///tmp/zmq/test1', 'r', '/in/test1', 11);

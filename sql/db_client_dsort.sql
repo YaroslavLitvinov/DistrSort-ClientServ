@@ -16,6 +16,7 @@ insert into files values('source', 'msq', 'r', '/in/ranges1', 13);
 insert into files values('source', 'msq', 'r', '/in/ranges2', 14);
 insert into files values('source', 'msq', 'r', '/in/ranges3', 15);
 insert into files values('source', 'msq', 'r', '/in/ranges4', 16);
+insert into files values('source', 'msq', 'w', '/out/crc', 17);
 
 insert into files values('dest', 'std', 'r', '/in/stdin', 0);
 insert into files values('dest', 'std', 'w', '/out/stdout', 1);
@@ -45,6 +46,7 @@ insert into files values('manager', 'msq', 'w', '/out/range-request2', 16);
 insert into files values('manager', 'msq', 'w', '/out/range-request3', 17);
 insert into files values('manager', 'msq', 'w', '/out/range-request4', 18);
 insert into files values('manager', 'msq', 'r', '/in/sorted_range', 19);
+insert into files values('manager', 'msq', 'r', '/in/crc', 20);
 
 insert into files values('test1PUSH', 'msq', 'w', '/out/test1', 10);
 insert into files values('test1PULL', 'msq', 'r', '/in/test1', 11);

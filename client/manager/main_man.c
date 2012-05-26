@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 int main(int argc, char *argv[]){
@@ -39,16 +40,25 @@ int main(int argc, char *argv[]){
 
 	WRITE_LOG(LOG_UI, "Manager node started");
 
-	//////////////////////////////////////////
+	/*crc reading from all source nodes*/
+	uint32_t crc_array[SRC_NODES_COUNT];
+	memset(crc_array, '\0', SRC_NODES_COUNT*sizeof(uint32_t));
+	struct file_record_t* crc_read_r = match_file_record_by_fd( &file_records, MANAGER_FD_READ_CRC);
+	assert(crc_read_r);
+	read_crcs(crc_read_r->fpath, crc_array);
+	/*crc read ok*/
+
+	/******** Histograms reading*/
 	struct file_record_t* hist_record = match_file_record_by_fd( &file_records, MANAGER_FD_READ_HISTOGRAM);
 	assert(hist_record);
 	struct Histogram histograms[SRC_NODES_COUNT];
 	WRITE_LOG(LOG_DETAILED_UI, "Recv histograms");
 	recv_histograms( hist_record->fpath, (struct Histogram*) &histograms, SRC_NODES_COUNT );
 	WRITE_LOG(LOG_DETAILED_UI, "Recv histograms OK");
-	//////////////////////////////////////////
+	/******** Histograms reading OK*/
 
-	/*Sort histograms by src_nodeid, because recv order is unexpected*/
+	/*Sort histograms by src_nodeid, because recv order is unexpected,
+	 * but histogram analizer algorithm is required deterministic order*/
 	qsort( histograms, SRC_NODES_COUNT, sizeof(struct Histogram), histogram_srcid_comparator );
 
 	WRITE_LOG(LOG_DETAILED_UI, "Analize histograms and request detailed histograms");
@@ -85,10 +95,14 @@ int main(int argc, char *argv[]){
 	struct file_record_t* results_record = match_file_record_by_fd( &file_records, MANAGER_FD_READ_SORT_RESULTS);
 	assert(results_record);
 	struct sort_result *results = read_sort_result( results_record->fpath, SRC_NODES_COUNT );
-
+	/*sort results by nodeid, because receive order not deterministic*/
 	qsort( results, SRC_NODES_COUNT, sizeof(struct sort_result), sortresult_comparator );
 	int sort_ok = 1;
+	uint32_t crc_test_unsorted = 0;
+	uint32_t crc_test_sorted = 0;
 	for ( int i=0; i < SRC_NODES_COUNT; i++ ){
+		crc_test_unsorted = (crc_test_unsorted+crc_array[i]% CRC_ATOM) % CRC_ATOM;
+		crc_test_sorted = (crc_test_sorted+results[i].crc% CRC_ATOM) % CRC_ATOM;
 		if ( i>0 ){
 			if ( !(results[i].max > results[i].min && results[i-1].max < results[i].min) )
 				sort_ok = 0;
@@ -98,7 +112,12 @@ int main(int argc, char *argv[]){
 		fflush(0);
 	}
 
-	WRITE_FMT_LOG( LOG_UI, "Distributed sort complete, Test %d\n", sort_ok );
-
+	WRITE_FMT_LOG( LOG_UI, "Distributed sort complete, Test %d, %d, %d\n", sort_ok, crc_test_unsorted, crc_test_sorted );
+	if ( crc_test_unsorted == crc_test_sorted ){
+		WRITE_LOG(LOG_UI, "crc OK");
+	}
+	else{
+		WRITE_LOG(LOG_UI, "crc FAILED");
+	}
 	return 0;
 }

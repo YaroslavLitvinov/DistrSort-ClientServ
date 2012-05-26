@@ -14,6 +14,9 @@ void
 init_request_data_array( struct request_data_t *req_data, int len );
 
 void
+write_crc(const char *path, uint32_t crc );
+
+void
 write_histogram(const char *path, const struct Histogram *histogram );
 
 int

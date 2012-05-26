@@ -32,6 +32,17 @@ init_request_data_array( struct request_data_t *req_data, int len ){
 }
 
 /*writing data
+ *WRITE 1x uint32_t, crc*/
+void
+write_crc(const char *writef, uint32_t crc ){
+	int fdw = open(writef, O_WRONLY);
+	int bytes = 0;
+	bytes = write(fdw, &crc, sizeof(crc) );
+	WRITE_FMT_LOG(LOG_DEBUG, "w crc bytes=%d", bytes);
+	close(fdw);
+}
+
+/*writing data
  * 1x struct packet_data_t[EPACKET_HISTOGRAM]
  * array_len x HistogramArrayItem*/
 void

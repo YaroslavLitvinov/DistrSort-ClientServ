@@ -67,11 +67,20 @@ int main(int argc, char *argv[]){
 
 	//if first part of sorting in single thread are completed
 	if ( test_sort_result( unsorted_array, partially_sorted_array, ARRAY_ITEMS_COUNT ) ){
-		//uint32_t crc = array_crc( partially_sorted_array, ARRAY_ITEMS_COUNT );
 		if ( ARRAY_ITEMS_COUNT ){
 			WRITE_FMT_LOG(LOG_UI, "Single process sorting complete min=%u, max=%u: TEST OK.\n",
 					partially_sorted_array[0], partially_sorted_array[ARRAY_ITEMS_COUNT-1] );
 		}
+
+		/*send crc of sorted array to the manager node*/
+		uint32_t crc = array_crc( partially_sorted_array, ARRAY_ITEMS_COUNT );
+		WRITE_FMT_LOG(LOG_DEBUG, "crc=%u", crc);
+		struct file_record_t* write_crc_r = match_file_record_by_fd( &file_records, SOURCE_FD_WRITE_CRC);
+		WRITE_FMT_LOG(LOG_DEBUG, "SOURCE_FD_WRITE_CRC fd=%p", write_crc_r);
+		assert(write_crc_r);
+		write_crc( write_crc_r->fpath, crc );
+		WRITE_LOG(LOG_DEBUG, "crc wrote");
+		/*send of crc complete*/
 
 		int histogram_len = 0;
 		HistogramArrayPtr histogram_array = alloc_histogram_array_get_len(

@@ -9,6 +9,7 @@
 #include "zmq_netw.h"
 #include "fs_inmem.h"
 #include "logfile.h"
+#include "errcodes.h"
 
 #include <zmq.h>
 #include <sqlite3.h>
@@ -18,18 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-#define FILE_TYPE_STD "std\0"
-#define FILE_TYPE_MSQ "msq\0"
-
-
-#define METHOD_BIND "bind\0"
-#define METHOD_CONNECT "connect\0"
-
-#define PUSH "PUSH\0"
-#define PULL "PULL\0"
-#define REQ  "REQ\0"
-#define REP  "REP\0"
 
 
 struct db_record_t* match_db_record_by_fd(struct db_records_t *records, int fd){
@@ -42,6 +31,8 @@ struct db_record_t* match_db_record_by_fd(struct db_records_t *records, int fd){
 	return NULL;
 }
 
+/*@param argc columns count
+ *@param argv columns values */
 int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azColName){
 	if ( file_records ){
 		struct db_record_t *frecord = NULL;
@@ -50,8 +41,9 @@ int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azC
 		if ( records->count >= records->maxcount ){
 			records->maxcount += DB_RECORDS_GRANULARITY;
 			records->array = realloc(records->array, sizeof(struct db_record_t)*records->maxcount);
-		}else
-			frecord = &records->array[records->count++];
+		}
+		frecord = &records->array[records->count++];
+		/*loop by table columns count*/
 		for(int i=0; i<argc; i++){
 			const char *col_value = argv[i];
 			int len_value = strlen(col_value);
@@ -112,13 +104,15 @@ int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azC
 }
 
 int get_all_records_from_dbtable(const char *path, const char *nodename, struct db_records_t *db_records){
+	if ( !path || !nodename || !db_records) return ERR_BAD_ARG;
 	sqlite3 *db = NULL;
 	char *zErrMsg = 0;
 	int rc = sqlite3_open( path, &db);
 	if( rc ){
-		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+		fprintf(stderr, "Can't open database file=%s, errtext %s, errcode=%d\n",
+				path, sqlite3_errmsg(db), rc);
 		sqlite3_close(db);
-		return 1;
+		return ERR_ERROR;
 	}
 	db_records->maxcount = DB_RECORDS_GRANULARITY;
 	db_records->array = malloc( sizeof(struct db_record_t)*db_records->maxcount );
@@ -127,10 +121,14 @@ int get_all_records_from_dbtable(const char *path, const char *nodename, struct 
 	char sqlstr[100];
 	sprintf(sqlstr, "select * from channels where nodename='%s';", nodename);
 	int sqlite_db_request_err = sqlite3_exec(db, sqlstr, get_dbrecords_callback, db_records, &zErrMsg);
-	assert( SQLITE_OK==sqlite_db_request_err );
+	if ( SQLITE_OK != sqlite_db_request_err ){
+		WRITE_FMT_LOG(LOG_ERR, "Sql statement : %s, exec error text=%s, errcode=%d\n",
+				sqlstr, sqlite3_errmsg(db), sqlite_db_request_err);
+		return ERR_ERROR;
+	}
 	sqlite3_free(zErrMsg);
 	sqlite3_close(db);
-	return 0;
+	return ERR_OK;
 }
 
 

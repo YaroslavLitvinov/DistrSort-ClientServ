@@ -11,6 +11,7 @@
 #include "fs_inmem.h"
 #include "sqluse_srv.h"
 #include "zmq_netw.h"
+#include "errcodes.h"
 #include <zmq.h>
 
 #define _FILE_OFFSET_BITS 64
@@ -514,11 +515,16 @@ int run_fuse_main(struct db_records_t *db_records, int argc, char *argv[])
 	__zmq_pool = malloc(sizeof(struct zeromq_pool));
 	int err = init_zeromq_pool(__zmq_pool);
 	if ( !err /*OK*/ ){
-		umask(0);
-		err = fuse_main(argc, argv, &zvm_oper, NULL);
-		/*this point is reached after unmount vfs*/
-		/*destroy zmq context*/
-		zeromq_term(__zmq_pool);
+		//err = open_all_comm_files(__zmq_pool, __db_records);
+		if ( ERR_OK == err ){
+			umask(0);
+			err = fuse_main(argc, argv, &zvm_oper, NULL);
+			WRITE_FMT_LOG(LOG_ERR, "fuse exit status err=%d", err);
+			/*this point is reached after unmount vfs*/
+			/*destroy zmq context*/
+			zeromq_term(__zmq_pool);
+			//close_all_comm_files(__zmq_pool);
+		}
 	}
 	return err;
 }

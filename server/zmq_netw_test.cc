@@ -9,6 +9,7 @@
 #include <zmq.h>
 
 #include "gtest/gtest.h"
+#include "errcodes.h"
 extern "C" {
 #include "logfile.h"
 #include "zmq_netw.h"
@@ -27,40 +28,9 @@ char* alloc_fill_random(int bytes);
 // Test harness for routines in zmq_netw.c
 class ZmqNetwTests : public ::testing::Test {
 public:
-	void TestSockfArrayAdd100items();
-	void TestSockfArrayAddDuplicateditems();
-	void TestSockfArrayFinditems();
-	void TestInitTermZmqNetwPool();
-	void TestSockfOpenClose();
-	void TestSockfCommunicationPushPull();
-	void TestSockfCommunicationReqRep();
-	void TestSockfIfZmqInitFailed();
-	void TestSockfBadArgs();
-
-protected:
-  // Sets up the test fixture.
-  void SetUp();
-  // Tears down the test fixture.
-  void TearDown();
-  /**@return bytes count really writed*/
-  int TestWriteLog( int detail_level, int verbose, const char* logstr );
- private:
-  //struct zeromq_pool *m_zmq_pool;
+	ZmqNetwTests(){}
 };
 
-
-void ZmqNetwTests::SetUp()
-{
-	/*init zmq networking*/
-	//m_zmq_pool = (struct zermoq_pool*) malloc(sizeof(struct zeromq_pool));
-	//EXPECT_NE(m_zmq_pool, (struct zeromq_pool*)NULL);
-	//init_zeromq_pool(m_zmq_pool);
-}
-
-void ZmqNetwTests::TearDown()
-{
-	//zeromq_term(m_zmq_pool);
-}
 
 struct zeromq_pool *CreateArrayPoolNoZmq(){
 	struct zeromq_pool * pool = (struct zeromq_pool*) malloc(sizeof(struct zeromq_pool));
@@ -375,7 +345,7 @@ TEST_F(ZmqNetwTests, TestSockfBadArgs) {
 	EXPECT_EQ( ERR_BAD_ARG, add_sockf_copy_to_array( zpool, sockf) );
 	EXPECT_EQ( ERR_BAD_ARG, remove_sockf_from_array_by_fd( zpool, 0) );
 	EXPECT_EQ( (struct sock_file_t*)NULL, open_sockf( NULL, NULL, 0) );
-	/*db_records not yet properly initialized*/
+	/*test using db_records not yet properly initialized*/
 	EXPECT_EQ( (struct sock_file_t*)NULL, open_sockf( zpool, db_records, 0) );
 	EXPECT_EQ(0, write_sockf(NULL, NULL, 1000000) );
 	sockf = (struct sock_file_t*)malloc(sizeof(struct sock_file_t));
@@ -392,6 +362,47 @@ TEST_F(ZmqNetwTests, TestSockfBadArgs) {
 	EXPECT_NE( ERR_OK, zeromq_term(zpool) );
 }
 
+
+
+TEST_F(ZmqNetwTests, TestSockfOpenAllCloseAll) {
+	struct zeromq_pool *zpool = (struct zeromq_pool *) malloc(sizeof(struct zeromq_pool *));
+	EXPECT_EQ(ERR_OK, init_zeromq_pool(zpool) );
+	/***Create db records*/
+	struct db_records_t db_records = {NULL, 0, DB_RECORDS_GRANULARITY, 0};
+	db_records.array = (struct db_record_t*)malloc( sizeof(struct db_record_t)*db_records.maxcount );
+	memset(db_records.array, '\0', sizeof(struct db_record_t)*db_records.maxcount);
+	/*add test item into db_records*/
+	struct db_record_t *record1 = &db_records.array[db_records.count++];
+	/*set record1 data*/
+	record1->fd = 3;
+	record1->fmode = 'w';
+	record1->ftype = EFILE_MSQ;
+	record1->method = EMETHOD_CONNECT;
+	record1->endpoint = (char*)__endpoint1;
+	record1->sock = ZMQ_PUSH;
+	struct db_record_t *record2 = &db_records.array[db_records.count++];
+	/*set record2 data*/
+	record2->fd = 4;
+	record2->fmode = 'r';
+	record2->ftype = EFILE_MSQ;
+	record2->method = EMETHOD_BIND;
+	record2->endpoint = (char*)__endpoint1;
+	record2->sock = ZMQ_PULL;
+	/*****test db records created*/
+	EXPECT_EQ(ERR_OK, open_all_comm_files(zpool, &db_records) );
+	/******Check sockets open status*/
+	struct sock_file_t *writef = sockf_by_fd(zpool, 3);
+	EXPECT_NE( (struct sock_file_t *)NULL, writef);
+	EXPECT_EQ( 8, write_sockf(writef, "testdata\0", 8) );
+	char buf[8];
+	struct sock_file_t *readf = sockf_by_fd(zpool, 4);
+	EXPECT_NE( (struct sock_file_t *)NULL, readf);
+	EXPECT_EQ( 8, read_sockf(readf, buf, 8 ));
+	/*opened sockets tested, close it*/
+	EXPECT_EQ(ERR_OK, close_all_comm_files(zpool) );
+	EXPECT_EQ(ERR_OK, zeromq_term(zpool) );
+	free(zpool);
+}
 
 int main(int argc, char **argv) {
 	OPEN_LOG( "log/zmq_netw_test.log", "netw_test", 0);

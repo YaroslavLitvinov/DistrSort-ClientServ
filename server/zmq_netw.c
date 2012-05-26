@@ -8,7 +8,9 @@
 
 #include "zmq_netw.h"
 #include "sqluse_srv.h"
+#include "fs_inmem.h"
 #include "logfile.h"
+#include "errcodes.h"
 #include <zmq.h>
 
 #include <string.h>
@@ -399,6 +401,29 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 int open_all_comm_files(struct zeromq_pool* zpool, struct db_records_t *db_records){
 	WRITE_FMT_LOG(LOG_DEBUG, "%p, %p", zpool, db_records);
 	int err = ERR_OK;
+	for (int i=0; i < db_records->count; i++){
+		if ( EFILE_MSQ == db_records->array[i].ftype ){
+			struct db_record_t *record = &db_records->array[i];
+			if ( !open_sockf(zpool, db_records, record->fd) ){
+				WRITE_FMT_LOG(LOG_ERR, "fd=%d, error NULL sockf", db_records->array[i].fd);
+				return ERR_ERROR;
+			}
+		}
+	}
+	return err;
+}
+
+int close_all_comm_files(struct zeromq_pool* zpool){
+	WRITE_FMT_LOG(LOG_DEBUG, "%p", zpool);
+	int err = ERR_OK;
+	for (int i=0; i < zpool->count_max; i++){
+		if ( !zpool->sockf_array[i].unused )
+		err = close_sockf(zpool, sockf_by_fd(zpool, zpool->sockf_array[i].fs_fd));
+		if ( ERR_OK != err ){
+			WRITE_FMT_LOG(LOG_ERR, "fd=%d, error=%d", zpool->sockf_array[i].fs_fd, err);
+			return err;
+		}
+	}
 	return err;
 }
 

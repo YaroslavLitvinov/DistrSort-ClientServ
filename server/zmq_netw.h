@@ -48,8 +48,6 @@ struct zeromq_pool{
 	int count_max;
 };
 
-enum errcode{ERR_OK=0, ERR_ERROR=-1, ERR_ALREADY_EXIST=-2, ERR_NOT_FOUND=-3, ERR_NO_MEMORY=-4, ERR_BAD_ARG=-5};
-
 /*find sock in array*/
 struct sock_file_t* sockf_by_fd(struct zeromq_pool* zpool, int fd);
 /*add sock to array*/
@@ -76,6 +74,6 @@ int zeromq_term(struct zeromq_pool* zpool);
 /*open all sockets connections*/
 int open_all_comm_files(struct zeromq_pool* zpool, struct db_records_t *db_records);
 /*close all sockets connections*/
-int close_all_comm_files(struct zeromq_pool* zpool, struct db_records_t *db_records);
+int close_all_comm_files(struct zeromq_pool* zpool);
 
 #endif /* ZMQ_NETW_H_ */

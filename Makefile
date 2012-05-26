@@ -9,8 +9,9 @@ DEBUG=-g -DLOG_ENABLE $(GCOV_FLAGS)
 SRCNODE_INCL=-I. -Iclient -Iclient/source -Isqlite
 MANNODE_INCL=-I. -Iclient -Iclient/manager -Isqlite
 
-all: createdirs zf-server dst_node src_node man_node test_node tests/zmq_netw_test
+all: createdirs zf-server dst_node src_node man_node test_node tests/zmq_netw_test tests/sqluse_srv_test
 	tests/zmq_netw_test
+	tests/sqluse_srv_test
 	
 createdirs:
 	mkdir -p obj log tests data
@@ -44,6 +45,10 @@ tests/zmq_netw_test: server/zmq_netw_test.cc obj/zmq_netw.o obj/logfile.o obj/sq
 	@g++ -o tests/zmq_netw_test $(ABS_PATH)server/zmq_netw_test.cc obj/zmq_netw.o obj/logfile.o obj/sqluse_srv.o \
 	obj/sqlite3.o -lzmq -Lgtest -lgtest -I. -Igtest -Iserver $(DEBUG)
 	
+tests/sqluse_srv_test: server/sqluse_srv_test.cc obj/sqluse_srv.o obj/logfile.o obj/sqlite3.o
+	@g++ -o tests/sqluse_srv_test $(ABS_PATH)server/sqluse_srv_test.cc obj/logfile.o obj/sqluse_srv.o \
+	obj/sqlite3.o -lpthread -Lgtest -lgtest -I. -Igtest -Iserver $(DEBUG)
+
 
 #for all clients and server
 obj/sqlite3.o:

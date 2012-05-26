@@ -18,7 +18,7 @@ echo run node servers
 DIR=$1/$MANAGER_NODE
 mkdir -p $DIR
 echo mkdir $DIR
-#gnome-terminal --geometry=80x20 -t "server manager $DIR" -x sh -c "./zf-server -s -odirect_io -d $DIR manager $MANAGER_NODE"
+gnome-terminal --geometry=80x20 -t "server manager $DIR" -x sh -c "./zf-server -s -odirect_io -d $DIR manager $MANAGER_NODE"
 
 for number in $SRC_NODES_LIST
 do

@@ -2,7 +2,7 @@
  * manager.c
  *
  *  Created on: 29.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #include "sqluse_cli.h"

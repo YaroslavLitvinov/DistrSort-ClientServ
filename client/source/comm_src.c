@@ -2,7 +2,7 @@
  * comm_src.c
  *
  *  Created on: 30.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 
@@ -52,7 +52,7 @@ write_histogram( const char *writef, const struct Histogram *histogram ){
 	t.type = EPACKET_HISTOGRAM;
 	t.src_nodeid = histogram->src_nodeid;
 	t.size = array_size;
-	WRITE_FMT_LOG(LOG_NET, "size=%d, type=%d, src_nodeid=%d", (int)t.size, t.type, t.src_nodeid);
+	WRITE_FMT_LOG(LOG_DEBUG, "size=%d, type=%d, src_nodeid=%d", (int)t.size, t.type, t.src_nodeid);
 
 	int fdw = open(writef, O_WRONLY);
 	int bytes = 0;
@@ -82,7 +82,7 @@ read_requests_write_detailed_histograms( const char* readf, const char* writef, 
 	int is_complete = 0;
 	char reply;
 	do {
-		WRITE_FMT_LOG(LOG_DATA, "Reading from file %s detailed histograms request", readf );fflush(0);
+		WRITE_FMT_LOG(LOG_DEBUG, "Reading from file %s detailed histograms request", readf );fflush(0);
 		/*receive data needed to create histogram using step=1,
 		actually requested histogram should contains array items range*/
 		struct request_data_t received_histogram_request;
@@ -133,13 +133,13 @@ read_range_request( const char *readf, struct request_data_t* sequence ){
 	int len = 0;
 	int fdr = open(readf, O_RDONLY);
 
-	WRITE_FMT_LOG(LOG_NET, "reading range  request from %s (EPACKET_SEQUENCE_REQUEST)", readf);
+	WRITE_FMT_LOG(LOG_DEBUG, "reading range  request from %s (EPACKET_SEQUENCE_REQUEST)", readf);
 	int bytes;
 	struct packet_data_t t;
 	t.type = EPACKET_UNKNOWN;
 	bytes=read( fdr, (char*)&t, sizeof(t) );
 	WRITE_FMT_LOG(LOG_DEBUG, "r packet_data_t bytes=%d", bytes);
-	WRITE_FMT_LOG(LOG_NET, "readed packet: type=%d, size=%d, src_node=%d", t.type, (int)t.size, t.src_nodeid );
+	WRITE_FMT_LOG(LOG_DEBUG, "readed packet: type=%d, size=%d, src_node=%d", t.type, (int)t.size, t.src_nodeid );
 
 	if ( t.type == EPACKET_SEQUENCE_REQUEST )
 	{
@@ -148,7 +148,7 @@ read_range_request( const char *readf, struct request_data_t* sequence ){
 			data = &sequence[j];
 			bytes=read(fdr, data, sizeof(struct request_data_t));
 			WRITE_FMT_LOG(LOG_DEBUG, "r packet_data_t bytes=%d", bytes);
-			WRITE_FMT_LOG(LOG_NET, "recv range request %d %d %d", data->src_nodeid, data->first_item_index, data->last_item_index );
+			WRITE_FMT_LOG(LOG_DEBUG, "recv range request %d %d %d", data->src_nodeid, data->first_item_index, data->last_item_index );
 		}
 	}
 	else{
@@ -172,7 +172,7 @@ write_sorted_ranges( const char *writef, const char *readf,
 
 	const int array_len = sequence->last_item_index - sequence->first_item_index + 1;
 	const BigArrayPtr array = src_array+sequence->first_item_index;
-	WRITE_FMT_LOG(LOG_NET, "Sending array_len=%d; min=%d, max=%d", array_len, array[0], array[array_len-1]);
+	WRITE_FMT_LOG(LOG_DEBUG, "Sending array_len=%d; min=%d, max=%d", array_len, array[0], array[array_len-1]);
 	int bytes;
 	char unused_reply;
 
@@ -220,7 +220,7 @@ write_sorted_ranges( const char *writef, const char *readf,
 	struct packet_data_t t;
 	t.size = array_len*sizeof(BigArrayItem);
 	t.type = EPACKET_RANGE;
-	WRITE_FMT_LOG(LOG_NET, "writing to %s: size=%d, type=%d (EPACKET_RANGE)", writef, (int)t.size, t.type );
+	WRITE_FMT_LOG(LOG_DEBUG, "writing to %s: size=%d, type=%d (EPACKET_RANGE)", writef, (int)t.size, t.type );
 	WRITE_FMT_LOG(LOG_DEBUG, "sizeof(struct packet_data_t)=%d", (int)sizeof(struct packet_data_t));
 	bytes=write(fdw, (char*) &t, sizeof(struct packet_data_t) );
 	WRITE_FMT_LOG(LOG_DEBUG, "w packet_data_t bytes=%d", bytes);
@@ -229,11 +229,11 @@ write_sorted_ranges( const char *writef, const char *readf,
 	/*write array data*/
 	bytes=write(fdw, array, t.size);
 	WRITE_FMT_LOG(LOG_DEBUG, "w array bytes=%d", bytes);
-	WRITE_FMT_LOG(LOG_NET, "Reading from %s receiver reply;", readf);
+	WRITE_FMT_LOG(LOG_DEBUG, "Reading from %s receiver reply;", readf);
 	bytes=read( fdr, &unused_reply, 1 );
 	WRITE_FMT_LOG(LOG_DEBUG, "r reply bytes=%d", bytes);
 #endif
-	WRITE_LOG(LOG_NET, "Reply from receiver OK;");
+	WRITE_LOG(LOG_DEBUG, "Reply from receiver OK;");
 	close(fdw);
 	close(fdr);
 }

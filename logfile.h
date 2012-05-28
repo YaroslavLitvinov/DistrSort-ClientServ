@@ -2,7 +2,7 @@
  * logfile.h
  *
  *  Created on: 10.05.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef LOGFILE_H_
@@ -13,10 +13,7 @@
 #define LOG_ERR 0
 #define LOG_UI 1
 #define LOG_DETAILED_UI 2
-#define LOG_NET 3
-#define LOG_DATA 4
-#define LOG_MISC 5
-#define LOG_DEBUG 6
+#define LOG_DEBUG 3
 #define LOG_LEVEL LOG_DEBUG
 
 //forward declarations

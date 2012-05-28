@@ -2,7 +2,7 @@
  * distr_sort.h
  *
  *  Created on: 29.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef DISTR_SORT_H_

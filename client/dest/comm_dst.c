@@ -2,7 +2,7 @@
  * comm_src.c
  *
  *  Created on: 30.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 
@@ -45,7 +45,7 @@ repreq_read_sorted_ranges( const char *readf, const char *writef, int nodeid,
 	int recv_bytes_count = 0;
 	int waiting_array_bytes_count = 0;
 	int recv_ranges=0;
-	WRITE_FMT_LOG(LOG_NET, "[%d] recv array -->", nodeid);
+	WRITE_FMT_LOG(LOG_DEBUG, "[%d] recv array -->", nodeid);
 
 	struct packet_data_t header;
 	do{
@@ -74,11 +74,11 @@ repreq_read_sorted_ranges( const char *readf, const char *writef, int nodeid,
 		/*waiting in loop while not all waiting bytes received and for all ranges*/
 	}while( recv_bytes_count < waiting_array_bytes_count || recv_ranges < ranges_count );
 #else
-	WRITE_FMT_LOG(LOG_NET, "[%d] Read ranges from %s\n", nodeid, readf);
+	WRITE_FMT_LOG(LOG_DEBUG, "[%d] Read ranges from %s\n", nodeid, readf);
 	for (int i=0; i < ranges_count; i++)
 	{
 		int recv_bytes_count = 0;
-		WRITE_FMT_LOG(LOG_NET, "[%d] recv array -->", nodeid);
+		WRITE_FMT_LOG(LOG_DEBUG, "[%d] recv array -->", nodeid);
 		struct packet_data_t t;
 
 		bytes=read( fdr, (char*)&t, sizeof(t) );
@@ -87,18 +87,18 @@ repreq_read_sorted_ranges( const char *readf, const char *writef, int nodeid,
 		assert(t.type == EPACKET_RANGE);
 		bytes=write(fdw, &reply, 1);
 		WRITE_FMT_LOG(LOG_DEBUG, "w reply bytes=%d", bytes);
-		WRITE_FMT_LOG(LOG_NET, "[%d]Send reply to %s", nodeid, writef);
+		WRITE_FMT_LOG(LOG_DEBUG, "[%d]Send reply to %s", nodeid, writef);
 		read( fdr, (char*)&dst_array[recv_bytes_count/sizeof(BigArrayItem)], t.size );
 		recv_bytes_count += t.size;
-		WRITE_FMT_LOG(LOG_NET, "[%d]--size=%d OK\n", nodeid, (int)t.size );
+		WRITE_FMT_LOG(LOG_DEBUG, "[%d]--size=%d OK\n", nodeid, (int)t.size );
 		write(fdw, &reply, 1);
-		WRITE_FMT_LOG(LOG_NET, "[%d]Send reply to %s", nodeid, writef);
+		WRITE_FMT_LOG(LOG_DEBUG, "[%d]Send reply to %s", nodeid, writef);
 	}
 #endif
 
 	close(fdr);
 	close(fdw);
-	WRITE_FMT_LOG(LOG_NET, "[%d] channel_receive_sorted_ranges OK\n", nodeid );
+	WRITE_FMT_LOG(LOG_DEBUG, "[%d] channel_receive_sorted_ranges OK\n", nodeid );
 }
 
 /*writing data:
@@ -109,7 +109,7 @@ write_sort_result( const char *writef, int nodeid, BigArrayPtr sorted_array, int
 	int fdw = open(writef, O_WRONLY);
 
 	uint32_t sorted_crc = array_crc( sorted_array, ARRAY_ITEMS_COUNT );
-	WRITE_FMT_LOG(LOG_NET, "[%d] send_sort_result: min=%d, max=%d, crc=%u", nodeid,
+	WRITE_FMT_LOG(LOG_DEBUG, "[%d] send_sort_result: min=%d, max=%d, crc=%u", nodeid,
 			sorted_array[0], sorted_array[len-1], sorted_crc );
 	struct sort_result result;
 	result.nodeid = nodeid;

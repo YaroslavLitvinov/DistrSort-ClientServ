@@ -2,7 +2,7 @@
  * sort.h
  *
  *  Created on: 17.03.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef SORT_H_

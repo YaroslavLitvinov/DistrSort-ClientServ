@@ -2,7 +2,7 @@
  * comm_src.h
  *
  *  Created on: 30.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef COMM_SRC_H_

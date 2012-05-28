@@ -2,7 +2,7 @@
  * comm_man.h
  *
  *  Created on: 29.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef COMM_MAN_H_

@@ -2,7 +2,7 @@
  * dsort.h
  *
  *  Created on: 29.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef DSORT_H_

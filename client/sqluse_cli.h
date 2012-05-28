@@ -2,7 +2,7 @@
  * sqluse_cli.h
  *
  *  Created on: 02.05.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef SQLUSE_CLI_H_

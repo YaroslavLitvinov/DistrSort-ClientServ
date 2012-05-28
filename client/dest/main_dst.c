@@ -2,7 +2,7 @@
  * main_src.c
  *
  *  Created on: 30.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #include "defines.h"

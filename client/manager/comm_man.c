@@ -2,7 +2,7 @@
  * communic.c
  *
  *  Created on: 29.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 
@@ -22,14 +22,14 @@
 void
 read_crcs(const char *readf, uint32_t *crc_array){
 	int fdr = open(readf, O_RDONLY);
-	WRITE_FMT_LOG(LOG_NET, "Reading read_crcs %d count", SRC_NODES_COUNT);
+	WRITE_FMT_LOG(LOG_DEBUG, "Reading read_crcs %d count", SRC_NODES_COUNT);
 	int bytes=0;
 	for( int i=0; i < SRC_NODES_COUNT; i++ ){
-		WRITE_FMT_LOG(LOG_NET, "Reading crc #%d", i);
+		WRITE_FMT_LOG(LOG_DEBUG, "Reading crc #%d", i);
 		bytes=read(fdr, (char*) &crc_array[i], sizeof(uint32_t) );
-		WRITE_FMT_LOG(LOG_NET, "%d bytes readed crc=%u", bytes, crc_array[i]);
+		WRITE_FMT_LOG(LOG_DEBUG, "%d bytes readed crc=%u", bytes, crc_array[i]);
 	}
-	WRITE_LOG(LOG_NET, "crc read ok");
+	WRITE_LOG(LOG_DEBUG, "crc read ok");
 	close(fdr);
 }
 
@@ -39,14 +39,14 @@ read_crcs(const char *readf, uint32_t *crc_array){
 void
 recv_histograms( const char *readf, struct Histogram *histograms, int wait_histograms_count ){
 	int fdr = open(readf, O_RDONLY);
-	WRITE_FMT_LOG(LOG_NET, "Reading histograms %d count", wait_histograms_count);
+	WRITE_FMT_LOG(LOG_DEBUG, "Reading histograms %d count", wait_histograms_count);
 	int bytes;
 	for( int i=0; i < wait_histograms_count; i++ ){
-		WRITE_FMT_LOG(LOG_NET, "Reading histogram #%d", i);
+		WRITE_FMT_LOG(LOG_DEBUG, "Reading histogram #%d", i);
 		struct packet_data_t t; t.type = EPACKET_UNKNOWN;
 		bytes=read(fdr, (char*) &t, sizeof(t) );
 		WRITE_FMT_LOG(LOG_DEBUG, "r packet_data_t bytes=%d", bytes);
-		WRITE_FMT_LOG(LOG_NET, "readed packet: type=%d, size=%d, src_nodeid=%d", t.type, (int)t.size, t.src_nodeid );
+		WRITE_FMT_LOG(LOG_DEBUG, "readed packet: type=%d, size=%d, src_nodeid=%d", t.type, (int)t.size, t.src_nodeid );
 		struct Histogram *histogram = &histograms[i];
 		if ( EPACKET_HISTOGRAM == t.type ){
 			histogram->array = malloc( t.size );
@@ -56,11 +56,11 @@ recv_histograms( const char *readf, struct Histogram *histograms, int wait_histo
 			histogram->src_nodeid = t.src_nodeid;
 		}
 		else{
-			WRITE_FMT_LOG(LOG_NET, "recv_histograms::wrong packet type %d size %d", t.type, (int)t.size);
+			WRITE_FMT_LOG(LOG_DEBUG, "recv_histograms::wrong packet type %d size %d", t.type, (int)t.size);
 			exit(-1);
 		}
 	}
-	WRITE_LOG(LOG_NET, "Hitograms ok");
+	WRITE_LOG(LOG_DEBUG, "Hitograms ok");
 	close(fdr);
 }
 
@@ -82,7 +82,7 @@ reqrep_detailed_histograms_alloc( const char *writef, const char *readf, int nod
 	int fdw = open(writef, O_WRONLY);
 	int fdr = open(readf, O_RDONLY);
 	char reply;
-	WRITE_FMT_LOG(LOG_NET, "[%d] complete=%d, Write detailed histogram requests to %s",
+	WRITE_FMT_LOG(LOG_DEBUG, "[%d] complete=%d, Write detailed histogram requests to %s",
 			nodeid, complete, writef );
 	int bytes;
 	//send detailed histogram request
@@ -92,7 +92,7 @@ reqrep_detailed_histograms_alloc( const char *writef, const char *readf, int nod
 	WRITE_FMT_LOG(LOG_DEBUG, "r reply bytes=%d", bytes);
 	bytes=write(fdw, &complete, sizeof(complete));
 	WRITE_FMT_LOG(LOG_DEBUG, "w is_complete bytes=%d", bytes);
-	WRITE_LOG(LOG_NET, "detailed histograms receiving");
+	WRITE_LOG(LOG_DEBUG, "detailed histograms receiving");
 	//recv reply
 	struct Histogram *item = malloc(sizeof(struct Histogram));
 	bytes=read(fdr, (char*) &item->src_nodeid, sizeof(item->src_nodeid));
@@ -108,7 +108,7 @@ reqrep_detailed_histograms_alloc( const char *writef, const char *readf, int nod
 	bytes=read(fdr, (char*) item->array, array_size);
 	WRITE_FMT_LOG(LOG_DEBUG, "r item->array bytes=%d", bytes);
 
-	WRITE_FMT_LOG(LOG_NET, "detailed histograms received from%d: expected len:%d",
+	WRITE_FMT_LOG(LOG_DEBUG, "detailed histograms received from%d: expected len:%d",
 			item->src_nodeid, (int)(sizeof(HistogramArrayItem)*item->array_len) );
 
 	close(fdw);
@@ -126,7 +126,7 @@ write_range_request( const char *writef, struct request_data_t** range, int len,
 	t.src_nodeid = (int)range[i][0].dst_nodeid;
 	t.size = len;
 	int bytes;
-	WRITE_FMT_LOG(LOG_NET, "t.ize=%d, t.type=%d(EPACKET_SEQUENCE_REQUEST)", (int)t.size, t.type);
+	WRITE_FMT_LOG(LOG_DEBUG, "t.ize=%d, t.type=%d(EPACKET_SEQUENCE_REQUEST)", (int)t.size, t.type);
 	bytes=write(fdw, &t, sizeof(t));
 	WRITE_FMT_LOG(LOG_DEBUG, "w packet_data_t bytes=%d", bytes);
 	for ( int j=0; j < len; j++ ){
@@ -135,7 +135,7 @@ write_range_request( const char *writef, struct request_data_t** range, int len,
 		data.dst_nodeid = j+FIRST_DEST_NODEID;
 		bytes=write(fdw, &data, sizeof(struct request_data_t));
 		WRITE_FMT_LOG(LOG_DEBUG, "w request_data_t bytes=%d", bytes);
-		WRITE_FMT_LOG(LOG_NET, "sendseq %d %d %d %d\n",
+		WRITE_FMT_LOG(LOG_DEBUG, "sendseq %d %d %d %d\n",
 				data.dst_nodeid, data.src_nodeid, data.first_item_index, data.last_item_index );
 	}
 	close(fdw);
@@ -162,7 +162,7 @@ void
 print_request_data_array( struct request_data_t* const range, int len ){
 	for ( int j=0; j < len; j++ )
 	{
-		WRITE_FMT_LOG(LOG_NET, "SEQUENCE N:%d, dst_pid=%d, src_pid=%d, findex %d, lindex %d \n",
+		WRITE_FMT_LOG(LOG_DEBUG, "SEQUENCE N:%d, dst_pid=%d, src_pid=%d, findex %d, lindex %d \n",
 				j, range[j].dst_nodeid, range[j].src_nodeid,
 				range[j].first_item_index, range[j].last_item_index );
 	}

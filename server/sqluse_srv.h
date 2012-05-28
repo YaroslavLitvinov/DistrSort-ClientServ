@@ -1,8 +1,14 @@
 /*
- * sqluse_cli.h
+ * sqluse_srv.h
  *
  *  Created on: 02.05.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
+ * This is channels configuration reading engine used by server side;
+ * All DB data represented by strings, and can be copied into data structure unchanged;
+ * But endpoint column string data can be used as format string for sprintf if %d format parameter is found,
+ * and db_records_t::cid as format value, contains properly value setted up before request;
+ * Some columns should converted into internal representation as enum or integer;
+ * The main selective parameter is nodename, all records contains same nodename are related to same node.
  */
 
 #ifndef SQLUSE_CLI_H_
@@ -44,8 +50,16 @@ struct db_record_t{
 };
 
 enum {DB_RECORDS_GRANULARITY=20};
+/*search record by file descriptor*/
 struct db_record_t* match_db_record_by_fd(struct db_records_t *records, int fd);
+
+/* In use case it's should not be directly called, but only as callback for sqlite API;*/
 int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azColName);
+
+/*Issue db request.
+ * @param path DB filename
+ * @param nodename which records are needed
+ * @param db_records data structure to get results, should be only valid pointer*/
 int get_all_records_from_dbtable(const char *path, const char *nodename, struct db_records_t *dbrecords);
 
 #endif /* SQLUSE_CLI_H_ */

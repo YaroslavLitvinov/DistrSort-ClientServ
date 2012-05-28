@@ -2,7 +2,7 @@
  * errcodes.h
  *
  *  Created on: 25.05.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef ERRCODES_H_

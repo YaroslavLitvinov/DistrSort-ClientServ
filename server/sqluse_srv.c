@@ -1,8 +1,8 @@
 /*
- * sqluse_cli.c
+ * sqluse_srv.c
  *
  *  Created on: 02.05.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #include "sqluse_srv.h"
@@ -31,7 +31,8 @@ struct db_record_t* match_db_record_by_fd(struct db_records_t *records, int fd){
 	return NULL;
 }
 
-/*@param argc columns count
+/* In use case it's should not be directly called, but only as callback for sqlite API;
+ *@param argc columns count
  *@param argv columns values */
 int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azColName){
 	if ( file_records ){
@@ -51,6 +52,7 @@ int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azC
 			case ECOL_NODENAME:
 				frecord->nodename = malloc( len_value+1 );
 				strcpy(frecord->nodename, col_value);
+				frecord->nodename[len_value] = '\0';
 				break;
 			case ECOL_FTYPE:
 				if ( !strcmp(col_value, FILE_TYPE_STD) ) frecord->ftype = EFILE_STD;
@@ -88,21 +90,26 @@ int get_dbrecords_callback(void *file_records, int argc, char **argv, char **azC
 				strncpy(&(frecord->fmode), col_value, 1);
 				break;
 			case ECOL_FPATH:
-				frecord->fpath = malloc( strlen(col_value)+1 );
+				frecord->fpath = malloc( len_value+1 );
 				strcpy(frecord->fpath, col_value );
+				frecord->fpath[len_value] = '\0';
 				break;
 			case ECOL_FD:
 				frecord->fd = atoi( col_value );
 				break;
 			}
 		}
-		WRITE_FMT_LOG(LOG_MISC, "nodename:%s, ftype=%d, sock=%d, method=%d, endpoint=%s, fmode=%c, fpath=%s, fd=%d\n",
+		WRITE_FMT_LOG(LOG_DEBUG, "nodename:%s, ftype=%d, sock=%d, method=%d, endpoint=%s, fmode=%c, fpath=%s, fd=%d\n",
 				frecord->nodename, frecord->ftype, frecord->sock, frecord->method,
 				frecord->endpoint, frecord->fmode, frecord->fpath, frecord->fd);
 	}
 	return 0;
 }
 
+/*Issue db request.
+ * @param path DB filename
+ * @param nodename which records are needed
+ * @param db_records data structure to get results, should be only valid pointer*/
 int get_all_records_from_dbtable(const char *path, const char *nodename, struct db_records_t *db_records){
 	if ( !path || !nodename || !db_records) return ERR_BAD_ARG;
 	sqlite3 *db = NULL;
@@ -116,7 +123,6 @@ int get_all_records_from_dbtable(const char *path, const char *nodename, struct 
 	}
 	db_records->maxcount = DB_RECORDS_GRANULARITY;
 	db_records->array = malloc( sizeof(struct db_record_t)*db_records->maxcount );
-
 	db_records->count = 0;
 	char sqlstr[100];
 	sprintf(sqlstr, "select * from channels where nodename='%s';", nodename);

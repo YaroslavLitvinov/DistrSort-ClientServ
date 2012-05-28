@@ -17,7 +17,6 @@ createdirs:
 	mkdir -p obj log tests data
 
 gcov: clean all
-	tests/zmq_netw_test
 	lcov --directory . --capture --output-file app.info
 	genhtml --output-directory cov_htmp app.info
 	@echo run $(ABS_PATH)cov_htmp/index.html

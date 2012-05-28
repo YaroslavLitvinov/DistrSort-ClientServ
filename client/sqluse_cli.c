@@ -2,7 +2,7 @@
  * sqluse_cli.c
  *
  *  Created on: 02.05.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #include "sqluse_cli.h"

@@ -2,7 +2,7 @@
  * main_src.c
  *
  *  Created on: 30.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #include "defines.h"
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]){
 		read_requests_write_detailed_histograms( read_dhist_req_r->fpath, write_dhist_req_r->fpath, nodeid,
 			partially_sorted_array, ARRAY_ITEMS_COUNT );
 
-		WRITE_LOG(LOG_MISC, "\n!!!!!!!Histograms Sending complete!!!!!!.\n");
+		WRITE_LOG(LOG_DETAILED_UI, "\n!!!!!!!Histograms Sending complete!!!!!!.\n");
 
 		struct request_data_t req_data_array[SRC_NODES_COUNT];
 		init_request_data_array( req_data_array, SRC_NODES_COUNT);
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]){
 					&req_data_array[i], partially_sorted_array );
 		}
 
-		WRITE_FMT_LOG(LOG_MISC, "[%d]Sending Ranges Complete-OK", nodeid);
+		WRITE_FMT_LOG(LOG_DETAILED_UI, "[%d]Sending Ranges Complete-OK", nodeid);
 		//////////////////////////////
 
 		free(unsorted_array);

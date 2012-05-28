@@ -2,7 +2,7 @@
  * dsort.c
  *
  *  Created on: 29.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 
@@ -46,10 +46,9 @@ histogram_srcid_comparator( const void *m1, const void *m2 ){
 void
 print_histogram( const HistogramArrayPtr histogram, size_t len ){
 	for ( int j=0; j < len; j++ ){
-		WRITE_FMT_LOG( LOG_DATA, "[%d]=[%d, %d), ",
+		WRITE_FMT_LOG( LOG_DEBUG, "[%d]=[%d, %d), ",
 				histogram[j].item, histogram[j].item_index, (int)histogram[j].last_item_index );
 	}
-	fflush(0);
 }
 
 

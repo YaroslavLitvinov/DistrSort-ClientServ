@@ -2,7 +2,7 @@
  * histanlz.h
  *
  *  Created on: 29.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef HISTANLZ_H_

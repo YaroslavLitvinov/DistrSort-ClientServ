@@ -2,7 +2,7 @@
  * defines.h
  *
  *  Created on: 08.05.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef DEFINES_H_

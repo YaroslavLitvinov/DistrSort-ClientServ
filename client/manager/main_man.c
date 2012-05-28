@@ -2,7 +2,7 @@
  * manager.c
  *
  *  Created on: 29.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #include "defines.h"
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]){
 			ARRAY_ITEMS_COUNT, nodeid, histograms, SRC_NODES_COUNT );
 	WRITE_LOG(LOG_DETAILED_UI, "Analize histograms and request detailed histograms OK");
 
-#if defined(LOG_ENABLE) && LOG_LEVEL>=LOG_MISC
+#if defined(LOG_ENABLE) && LOG_LEVEL>=LOG_DEBUG
 	for (int i=0; i < SRC_NODES_COUNT; i++ )
 	{
 		WRITE_FMT_LOG( LOG_DEBUG, "SOURCE PART N %d:\n", i );

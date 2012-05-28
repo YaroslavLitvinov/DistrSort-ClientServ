@@ -2,7 +2,7 @@
  * zmq_netw.c
  *
  *  Created on: 03.05.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 
@@ -24,7 +24,8 @@ int init_zeromq_pool(struct zeromq_pool * zpool){
 	if ( !zpool ) return ERR_BAD_ARG;
 	int err = 0;
 
-	/*create zmq context*/
+	/*create zmq context, it should be destroyed in zeromq_term; all opened sockets should be closed
+	 *before finishing, either zmq_term will wait in internal loop for completion of all I/O requests*/
 	zpool->context = zmq_init(1);
 	if ( zpool->context ){
 			zpool->count_max=ESOCKF_ARRAY_GRANULARITY;
@@ -189,7 +190,7 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 	struct sock_file_t *sockf = sockf_by_fd(zpool, fd );
 	if ( sockf ) {
 		/*file with predefined descriptor already opened, just return socket*/
-		WRITE_FMT_LOG(LOG_MISC, "Existing socket: Trying to open twice? %d", sockf->fs_fd);
+		WRITE_FMT_LOG(LOG_DEBUG, "Existing socket: Trying to open twice? %d", sockf->fs_fd);
 		return sockf;
 	}
 
@@ -224,7 +225,7 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 			}
 			else{
 				/*Flow1: init zmq network socket in normal way*/
-				WRITE_FMT_LOG(LOG_NET, "open socket: %s, sock type %d\n", db_record->endpoint, db_record->sock);
+				WRITE_FMT_LOG(LOG_DEBUG, "open socket: %s, sock type %d\n", db_record->endpoint, db_record->sock);
 				sockf->netw_socket = zmq_socket( zpool->context, db_record->sock );
 				if ( !sockf->netw_socket ){
 					WRITE_LOG(LOG_ERR, "zmq_socket return NULL");
@@ -234,14 +235,14 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 					int err = ERR_OK;
 					switch(db_record->method){
 					case EMETHOD_BIND:
-						WRITE_LOG(LOG_NET, "open socket: bind");
+						WRITE_LOG(LOG_DEBUG, "open socket: bind");
 						err= zmq_bind(sockf->netw_socket, db_record->endpoint);
 						WRITE_FMT_LOG(LOG_ERR, "zmq_bind status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
 						break;
 					case EMETHOD_CONNECT:
-						WRITE_LOG(LOG_NET, "open socket: connect");
+						WRITE_LOG(LOG_DEBUG, "open socket: connect");
 						err = zmq_connect(sockf->netw_socket, db_record->endpoint);
-						WRITE_FMT_LOG(LOG_NET, "zmq_connect status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
+						WRITE_FMT_LOG(LOG_DEBUG, "zmq_connect status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
 						break;
 					default:
 						WRITE_LOG(LOG_ERR, "open socket: undefined sock method");
@@ -293,12 +294,12 @@ int close_sockf(struct zeromq_pool* zpool, struct sock_file_t *sockf){
 			free(sockf->tempbuf->buf), sockf->tempbuf->buf=NULL;
 			free(sockf->tempbuf), sockf->tempbuf = NULL;
 		}
-		WRITE_LOG(LOG_NET, "dual direction zmq socket should be closed later");
+		WRITE_LOG(LOG_DEBUG, "dual direction zmq socket should be closed later");
 	}else if( sockf->netw_socket ){
-		WRITE_LOG(LOG_NET, "zmq socket closing...");
+		WRITE_LOG(LOG_DEBUG, "zmq socket closing...");
 		int err = zmq_close( sockf->netw_socket );
 		sockf->netw_socket = NULL;
-		WRITE_FMT_LOG(LOG_NET, "zmq_close status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
+		WRITE_FMT_LOG(LOG_DEBUG, "zmq_close status err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
 	}
 	if ( ERR_OK == err )
 		return remove_sockf_from_array_by_fd(zpool, sockf->fs_fd );
@@ -320,7 +321,7 @@ ssize_t  write_sockf(struct sock_file_t *sockf, const char *buf, size_t size){
 	}
 	else{
 		memcpy (zmq_msg_data (&msg), buf, size);
-		WRITE_FMT_LOG(LOG_NET, "zmq_sending fd=%d buf %d bytes...", sockf->fs_fd, (int)size );
+		WRITE_FMT_LOG(LOG_DEBUG, "zmq_sending fd=%d buf %d bytes...", sockf->fs_fd, (int)size );
 		err = zmq_send ( sockf->netw_socket, &msg, 0);
 		if ( err != 0 ){
 			WRITE_FMT_LOG(LOG_ERR, "zmq_send err %d, errno %d, status %s\n", err, zmq_errno(), zmq_strerror(zmq_errno()));
@@ -328,7 +329,7 @@ ssize_t  write_sockf(struct sock_file_t *sockf, const char *buf, size_t size){
 		}
 		else{
 			wrote = size;
-			WRITE_LOG(LOG_NET, "zmq_send ok");
+			WRITE_LOG(LOG_DEBUG, "zmq_send ok");
 		}
 		zmq_msg_close (&msg);
 	}
@@ -342,9 +343,9 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 	/*use sockf->tempbuf to save received results if user received more data than can be write into buf
 	 * Data from temp buf should be readed at next call of read*/
 	int bytes_read = 0;
-	WRITE_FMT_LOG(LOG_NET, "count=%d", (int)count);
+	WRITE_FMT_LOG(LOG_DEBUG, "count=%d", (int)count);
 	if ( sockf->tempbuf && sockf->tempbuf->buf ){
-		WRITE_FMT_LOG(LOG_NET, "read from tempbuf, size=%d, pos=%d", (int)sockf->tempbuf->size, sockf->tempbuf->pos  );
+		WRITE_FMT_LOG(LOG_DEBUG, "read from tempbuf, size=%d, pos=%d", (int)sockf->tempbuf->size, sockf->tempbuf->pos  );
 		/*how much of data can be copied, but not more than requested*/
 		bytes_read = min( sockf->tempbuf->size-sockf->tempbuf->pos, count );
 		/*copy to buf param from temp buffer starting from current pos*/
@@ -371,11 +372,11 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 		do{
 			zmq_msg_t msg;
 			zmq_msg_init (&msg);
-			WRITE_FMT_LOG(LOG_NET, "zmq_recv fd=%d, %d bytes...", sockf->fs_fd, (int)count);
+			WRITE_FMT_LOG(LOG_DEBUG, "zmq_recv fd=%d, %d bytes...", sockf->fs_fd, (int)count);
 			int err = zmq_recv ( sockf->netw_socket, &msg, 0);
 			if ( 0 != err ){
 				/*read error*/
-				WRITE_FMT_LOG(LOG_NET, "zmq_recv err %d, errno %d, status %s", err, zmq_errno(), zmq_strerror(zmq_errno()) );
+				WRITE_FMT_LOG(LOG_DEBUG, "zmq_recv err %d, errno %d, status %s", err, zmq_errno(), zmq_strerror(zmq_errno()) );
 				return 0;
 			}
 			/*read ok*/
@@ -387,7 +388,9 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 			//if readed data less than received data, then store rest in tempbuf
 			if ( bytes < msg_size ){
 				sockf->tempbuf = malloc( sizeof(struct tempbuf_t) );
+				/*initialization of all tempbuf members*/
 				sockf->tempbuf->buf = malloc( msg_size-bytes );
+				memset(sockf->tempbuf->buf, '\0', msg_size-bytes);
 				memcpy( sockf->tempbuf->buf, recv_data+bytes, msg_size-bytes );
 				sockf->tempbuf->size = msg_size-bytes;
 				sockf->tempbuf->pos=0;

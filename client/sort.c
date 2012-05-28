@@ -2,7 +2,7 @@
  * sort.c
  *
  *  Created on: 16.03.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  *      Merge sorting recursive algorithm implementation.
  */
 

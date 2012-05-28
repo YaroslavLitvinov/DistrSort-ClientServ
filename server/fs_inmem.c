@@ -2,7 +2,7 @@
  * fs_inmem.c
  *
  *  Created on: 20.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #define FUSE_USE_VERSION 26
@@ -200,14 +200,14 @@ fsfile_by_path(struct file_info_array_t *array, const char *path){
 
 
 void stat_printf(const char *path, struct stat* stat){
-	WRITE_FMT_LOG(LOG_MISC, "path=%s stat{ st_mode=0x%x, st_ino=%d }", path, stat->st_mode, (int)stat->st_ino );
+	WRITE_FMT_LOG(LOG_DEBUG, "path=%s stat{ st_mode=0x%x, st_ino=%d }", path, stat->st_mode, (int)stat->st_ino );
 }
 
 
 
 static int zvm_getattr(const char *path, struct stat *stbuf)
 {
-	WRITE_FMT_LOG(LOG_MISC, "getattr_path=%s", path);
+	WRITE_FMT_LOG(LOG_DEBUG, "getattr_path=%s", path);
 	memset(stbuf, 0, sizeof(struct stat));
 
 	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
@@ -238,7 +238,7 @@ static int zvm_access(const char *path, int mask)
 {
 	(void)path;
 	(void)mask;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s, mask=%d\n", __func__, path, mask );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s, mask=%d\n", __func__, path, mask );
 	return 0;
 }
 
@@ -246,7 +246,7 @@ static int zvm_readlink(const char *path, char *buf, size_t size)
 {
 	(void)path;
 	(void)size;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s, size=%d\n", __func__, path, (int)size );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s, size=%d\n", __func__, path, (int)size );
 	return 0;
 }
 
@@ -256,7 +256,7 @@ static int zvm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	struct stat st;
 	struct file_info_t *finfo = NULL;
 	int path_len = strlen(path);
-	WRITE_FMT_LOG(LOG_MISC, " readdir=%s;", path);
+	WRITE_FMT_LOG(LOG_DEBUG, " readdir=%s;", path);
 	for( int i=0; i < __fs->fs_structure->count; i++ ){
 		memset(&st, 0, sizeof(st));
 		finfo = &__fs->fs_structure->array[i];
@@ -280,7 +280,7 @@ static int zvm_mknod(const char *path, mode_t mode, dev_t rdev)
 	(void)path;
 	(void)mode;
 	(void)rdev;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s, mode=0x%x\n", __func__, path, mode );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s, mode=0x%x\n", __func__, path, mode );
 	return 0;
 }
 
@@ -288,21 +288,21 @@ static int zvm_mkdir(const char *path, mode_t mode)
 {
 	(void)path;
 	(void)mode;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s, mode=0x%x\n", __func__, path, mode );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s, mode=0x%x\n", __func__, path, mode );
 	return 0;
 }
 
 static int zvm_unlink(const char *path)
 {
 	(void)path;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s\n", __func__, path );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s\n", __func__, path );
 	return 0;
 }
 
 static int zvm_rmdir(const char *path)
 {
 	(void)path;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s\n", __func__, path );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s\n", __func__, path );
 	return 0;
 }
 
@@ -310,7 +310,7 @@ static int zvm_symlink(const char *from, const char *to)
 {
 	(void)from;
 	(void)to;
-	WRITE_FMT_LOG(LOG_MISC, "%s from=%s, to=%s\n", __func__, from, to );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s from=%s, to=%s\n", __func__, from, to );
 	return 0;
 }
 
@@ -318,7 +318,7 @@ static int zvm_rename(const char *from, const char *to)
 {
 	(void)from;
 	(void)to;
-	WRITE_FMT_LOG(LOG_MISC, "%s from=%s, to=%s\n", __func__, from, to );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s from=%s, to=%s\n", __func__, from, to );
 	return 0;
 }
 
@@ -326,7 +326,7 @@ static int zvm_link(const char *from, const char *to)
 {
 	(void)from;
 	(void)to;
-	WRITE_FMT_LOG(LOG_MISC, "%s from=%s, to=%s\n", __func__, from, to );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s from=%s, to=%s\n", __func__, from, to );
 	return 0;
 }
 
@@ -334,7 +334,7 @@ static int zvm_chmod(const char *path, mode_t mode)
 {
 	(void)path;
 	(void)mode;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s, mode=0x%x\n", __func__, path, mode );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s, mode=0x%x\n", __func__, path, mode );
 	return 0;
 }
 
@@ -343,13 +343,13 @@ static int zvm_chown(const char *path, uid_t uid, gid_t gid)
 	(void)path;
 	(void)uid;
 	(void)gid;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s\n", __func__, path );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s\n", __func__, path );
 	return 0;
 }
 
 static int zvm_truncate(const char *path, off_t size)
 {
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s, size=%d\n", __func__, path, (int)size );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s, size=%d\n", __func__, path, (int)size );
 
 	assert(__fs);
 	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
@@ -365,7 +365,7 @@ static int zvm_utimens(const char *path, const struct timespec ts[2])
 {
 	(void)path;
 	(void)ts;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s\n", __func__, path );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s\n", __func__, path );
 	return 0;
 }
 
@@ -374,7 +374,7 @@ static int zvm_open(const char *path, struct fuse_file_info *fi)
 {
 	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
 	if ( finfo ){
-		WRITE_FMT_LOG(LOG_MISC, "zvm_open %s", path );
+		WRITE_FMT_LOG(LOG_DEBUG, "zvm_open %s", path );
 		if ( sockf_by_fd( __zmq_pool, finfo->fd) ) return 0; /*already opened socket*/
 		int access = check_access_mode( finfo->access_mode, fi->flags );
 		/*if access is granted and found */
@@ -389,7 +389,7 @@ static int zvm_open(const char *path, struct fuse_file_info *fi)
 			}
 		}
 		else {
-			WRITE_FMT_LOG(LOG_MISC, "zvm_open ACCESS DENIED %s", path );
+			WRITE_FMT_LOG(LOG_DEBUG, "zvm_open ACCESS DENIED %s", path );
 			return -EACCES;
 		}
 	}
@@ -432,7 +432,7 @@ static int zvm_read(const char *path, char *buf, size_t size, off_t offset,
 static int zvm_write(const char *path, const char *buf, size_t size,
 		     off_t offset, struct fuse_file_info *fi)
 {
-	WRITE_FMT_LOG(LOG_MISC, "path=%s, size=%d, off_t=%d", path, (int)size, (int)offset );
+	WRITE_FMT_LOG(LOG_DEBUG, "path=%s, size=%d, off_t=%d", path, (int)size, (int)offset );
 	if ( !fi ) return -EINVAL;
 	assert(__fs);
 	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
@@ -466,7 +466,7 @@ static int zvm_write(const char *path, const char *buf, size_t size,
 static int zvm_statfs(const char *path, struct statvfs *stbuf){
 	(void)path;
 	(void)stbuf;
-	WRITE_FMT_LOG(LOG_MISC, "%s path=%s\n", __func__, path );
+	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s\n", __func__, path );
 	return 0;
 }
 

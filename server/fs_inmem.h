@@ -2,7 +2,7 @@
  * fs_inmem.h
  *
  *  Created on: 20.04.2012
- *      Author: yaroslav
+ *      Author: YaroslavLitvinov
  */
 
 #ifndef FUSEXMP_H_

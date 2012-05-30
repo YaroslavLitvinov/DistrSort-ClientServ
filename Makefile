@@ -30,9 +30,9 @@ man_node: obj/main_man.o obj/sqluse_cli.o obj/comm_man.o obj/histanlz.o obj/sort
 	@gcc -o man_node obj/main_man.o obj/sqluse_cli.o obj/comm_man.o obj/histanlz.o obj/sort.o obj/dsort.o \
 	obj/sqlite3.o obj/logfile.o -Wall -std=c99 $(DEBUG)
 	
-src_node: obj/main_src.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/comm_src.o obj/sqlite3.o obj/logfile.o obj/cpuid.o
+src_node: obj/main_src.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/comm_src.o obj/sqlite3.o obj/logfile.o
 	@gcc -o src_node obj/main_src.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/sqlite3.o obj/comm_src.o  \
-	obj/logfile.o obj/cpuid.o $(SRCNODE_INCL) $(DEBUG) -Wall -std=c99 
+	obj/logfile.o $(SRCNODE_INCL) $(DEBUG) -Wall -std=c99 
 	
 dst_node: obj/main_dst.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/comm_dst.o obj/sqlite3.o obj/logfile.o
 	@gcc -o dst_node obj/main_dst.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/sqlite3.o obj/comm_dst.o  \
@@ -120,9 +120,6 @@ obj/histanlz.o: client/manager/histanlz.c defines.h
 #client side: manager node
 obj/main_test.o: client/main_test.c
 	@gcc -c -o obj/main_test.o client/main_test.c  $(MANNODE_INCL) $(DEBUG) -Wall -std=c99
-
-obj/cpuid.o: client/cpuid.c
-	@gcc -c -o obj/cpuid.o client/cpuid.c $(DEBUG) -Wall -std=c99
 
 clean_gcov:
 	find -name "*.gcda" | xargs rm -f

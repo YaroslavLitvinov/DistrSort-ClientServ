@@ -56,9 +56,14 @@ write_histogram( const char *writef, const struct Histogram *histogram ){
 
 	int fdw = open(writef, O_WRONLY);
 	int bytes = 0;
-	bytes = write(fdw, &t, sizeof(t) );
-	WRITE_FMT_LOG(LOG_DEBUG, "w packet_data_t bytes=%d", bytes);
-	bytes = write(fdw, histogram->array, array_size );
+	size_t buf_size = sizeof(t)+array_size;
+	/*writing to pipeline whole packet*/
+	char *buffer = malloc(buf_size);
+	memset(buffer, '\0', buf_size );
+	memcpy(buffer, &t, sizeof(t));
+	bytes = sizeof(t);
+	memcpy(buffer+bytes, histogram->array, array_size);
+	bytes = write(fdw, buffer, buf_size);
 	WRITE_FMT_LOG(LOG_DEBUG, "w array bytes=%d", bytes);
 	close(fdw);
 }
@@ -88,6 +93,7 @@ read_requests_write_detailed_histograms( const char* readf, const char* writef, 
 		struct request_data_t received_histogram_request;
 		int bytes;
 		bytes = read(fdr, (char*) &received_histogram_request, sizeof(received_histogram_request) );
+		assert(bytes>0);
 		WRITE_FMT_LOG(LOG_DEBUG, "r request_data_t bytes=%d", bytes);
 		bytes = write(fdw, &reply, 1);
 		WRITE_FMT_LOG(LOG_DEBUG, "w reply bytes=%d", bytes);

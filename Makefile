@@ -9,9 +9,10 @@ DEBUG=-g -DLOG_ENABLE $(GCOV_FLAGS)
 SRCNODE_INCL=-I. -Iclient -Iclient/source -Isqlite
 MANNODE_INCL=-I. -Iclient -Iclient/manager -Isqlite
 
-all: createdirs zf-server dst_node src_node man_node test_node tests/zmq_netw_test tests/sqluse_srv_test
+all: createdirs zf-server dst_node src_node man_node test_node tests/zmq_netw_test tests/sqluse_srv_test tests/sqluse_cli_test
 	tests/zmq_netw_test
 	tests/sqluse_srv_test
+	tests/sqluse_cli_test
 	
 createdirs:
 	mkdir -p obj log tests data
@@ -29,9 +30,9 @@ man_node: obj/main_man.o obj/sqluse_cli.o obj/comm_man.o obj/histanlz.o obj/sort
 	@gcc -o man_node obj/main_man.o obj/sqluse_cli.o obj/comm_man.o obj/histanlz.o obj/sort.o obj/dsort.o \
 	obj/sqlite3.o obj/logfile.o -Wall -std=c99 $(DEBUG)
 	
-src_node: obj/main_src.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/comm_src.o obj/sqlite3.o obj/logfile.o
+src_node: obj/main_src.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/comm_src.o obj/sqlite3.o obj/logfile.o obj/cpuid.o
 	@gcc -o src_node obj/main_src.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/sqlite3.o obj/comm_src.o  \
-	obj/logfile.o $(SRCNODE_INCL) $(DEBUG) -Wall -std=c99 
+	obj/logfile.o obj/cpuid.o $(SRCNODE_INCL) $(DEBUG) -Wall -std=c99 
 	
 dst_node: obj/main_dst.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/comm_dst.o obj/sqlite3.o obj/logfile.o
 	@gcc -o dst_node obj/main_dst.o obj/sqluse_cli.o obj/sort.o obj/dsort.o obj/sqlite3.o obj/comm_dst.o  \
@@ -46,6 +47,10 @@ tests/zmq_netw_test: server/zmq_netw_test.cc obj/zmq_netw.o obj/logfile.o obj/sq
 	
 tests/sqluse_srv_test: server/sqluse_srv_test.cc obj/sqluse_srv.o obj/logfile.o obj/sqlite3.o
 	@g++ -o tests/sqluse_srv_test $(ABS_PATH)server/sqluse_srv_test.cc obj/logfile.o obj/sqluse_srv.o \
+	obj/sqlite3.o -lpthread -Lgtest -lgtest -I. -Igtest -Iserver $(DEBUG)
+
+tests/sqluse_cli_test: client/sqluse_cli_test.cc obj/sqluse_cli.o obj/logfile.o obj/sqlite3.o
+	@g++ -o tests/sqluse_cli_test $(ABS_PATH)client/sqluse_cli_test.cc obj/logfile.o obj/sqluse_cli.o \
 	obj/sqlite3.o -lpthread -Lgtest -lgtest -I. -Igtest -Iserver $(DEBUG)
 
 
@@ -74,7 +79,7 @@ obj/zmq_netw.o: server/zmq_netw.c
 
 #client side: any node
 obj/sqluse_cli.o: client/sqluse_cli.c defines.h
-	@gcc -c -o obj/sqluse_cli.o client/sqluse_cli.c $(SRCNODE_INCL) $(DEBUG) -Wall -std=c99
+	@gcc -c -o obj/sqluse_cli.o $(ABS_PATH)client/sqluse_cli.c $(SRCNODE_INCL) $(DEBUG) -Wall -std=c99
 
 #client side source node & dest node
 obj/dsort.o: client/dsort.c
@@ -115,6 +120,9 @@ obj/histanlz.o: client/manager/histanlz.c defines.h
 #client side: manager node
 obj/main_test.o: client/main_test.c
 	@gcc -c -o obj/main_test.o client/main_test.c  $(MANNODE_INCL) $(DEBUG) -Wall -std=c99
+
+obj/cpuid.o: client/cpuid.c
+	@gcc -c -o obj/cpuid.o client/cpuid.c $(DEBUG) -Wall -std=c99
 
 clean_gcov:
 	find -name "*.gcda" | xargs rm -f

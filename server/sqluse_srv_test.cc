@@ -9,12 +9,12 @@
 
 #include "gtest/gtest.h"
 #include "errcodes.h"
+#include "defines.h"
 extern "C" {
 #include "logfile.h"
 #include "sqluse_srv.h"
 }
 
-#define SERVER_DB_PATH_TEST "server_dsort.db"
 #define TEST_NODENAME "test\0"
 #define TEST_ENDPOINT "ipc://test\0"
 #define TEST_FPATH "/in/file\0"
@@ -29,10 +29,33 @@ public:
 };
 
 
+static int
+records_comparator( const void *m1, const void *m2 )
+{
+	const struct db_record_t *t1= (const struct db_record_t* )(m1);
+	const struct db_record_t *t2= (const struct db_record_t* )(m2);
+
+	if ( t1->fd < t2->fd )
+		return -1;
+	else if ( t1->fd > t2->fd )
+		return 1;
+	else return 0;
+	return 0;
+}
+
+
+
 TEST_F(SqlUseSrvTests, TestReadDbItems) {
 	struct db_records_t db_records;
 	memset(&db_records, '\0', sizeof(struct db_records_t));
-	EXPECT_EQ( ERR_OK, get_all_records_from_dbtable(SERVER_DB_PATH_TEST, "manager", &db_records) );
+	EXPECT_EQ( ERR_OK, get_all_records_from_dbtable(SERVER_DB_PATH, "manager", &db_records) );
+	/*sort db records to verify that file descriptors are unique*/
+	qsort( db_records.array, db_records.count, sizeof(struct db_record_t), records_comparator );
+	/*test sorted records*/
+	for (int i=0; i < db_records.count-1; i++){
+		EXPECT_LT( db_records.array[i].fd, db_records.array[i+1].fd );
+	}
+
 	EXPECT_NE(0, db_records.count);
 	struct db_record_t *record = match_db_record_by_fd(&db_records, 3);
 	if ( record ){
@@ -44,8 +67,8 @@ TEST_F(SqlUseSrvTests, TestReadDbItems) {
 TEST_F(SqlUseSrvTests, TestReadDbBadArgs) {
 	struct db_records_t db_records;
 	EXPECT_EQ( ERR_BAD_ARG, get_all_records_from_dbtable( NULL, NULL, NULL) );
-	EXPECT_EQ( ERR_BAD_ARG, get_all_records_from_dbtable( SERVER_DB_PATH_TEST, "manager", NULL) );
-	EXPECT_EQ( ERR_BAD_ARG, get_all_records_from_dbtable( SERVER_DB_PATH_TEST, NULL, &db_records) );
+	EXPECT_EQ( ERR_BAD_ARG, get_all_records_from_dbtable( SERVER_DB_PATH, "manager", NULL) );
+	EXPECT_EQ( ERR_BAD_ARG, get_all_records_from_dbtable( SERVER_DB_PATH, NULL, &db_records) );
 }
 
 TEST_F(SqlUseSrvTests, TestDbItemsParser) {

@@ -37,7 +37,7 @@ struct file_info_array_t{
 	int maxcount;
 };
 struct file_info_t *
-fsfile_by_path(struct file_info_array_t *array, const char *path);
+fsfile_by_path(struct file_info_array_t *array, const char *path, size_t len);
 int callback_add_dir(const char *dirpath, int len);
 void process_subdirs_via_callback( int (*callback_add_dir)(const char *, int), const char *path, int len );
 

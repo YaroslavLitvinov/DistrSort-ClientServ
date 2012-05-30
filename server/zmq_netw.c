@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+static uint32_t __bytes_recv = 0;
+static uint32_t __bytes_sent = 0;
 
 int init_zeromq_pool(struct zeromq_pool * zpool){
 	WRITE_FMT_LOG(LOG_DEBUG, "%p", zpool);
@@ -78,7 +80,7 @@ int zeromq_term(struct zeromq_pool* zpool){
 		else{
 			err= ERR_OK;
 			zpool->context = NULL;
-			WRITE_LOG(LOG_ERR, "zmq_term ok\n");
+			WRITE_FMT_LOG(LOG_ERR, "zmq_term ok, sent %u ; recv %u bytes\n", __bytes_sent, __bytes_recv);
 		}
 	}
 	else{
@@ -220,7 +222,7 @@ struct sock_file_t* open_sockf(struct zeromq_pool* zpool, struct db_records_t *d
 			struct sock_file_t* dual_sockf = get_dual_sockf(zpool, db_records, fd);
 			if ( dual_sockf ){
 				/*Flow2: dual direction socket, use existing zmq network socket*/
-				WRITE_LOG(LOG_DEBUG, "zvm_open use dual socket");
+				WRITE_LOG(LOG_DEBUG, "use dual socket");
 				sockf->netw_socket = dual_sockf->netw_socket;
 			}
 			else{
@@ -333,6 +335,7 @@ ssize_t  write_sockf(struct sock_file_t *sockf, const char *buf, size_t size){
 		}
 		zmq_msg_close (&msg);
 	}
+	__bytes_sent +=wrote;
 	return wrote;
 }
 
@@ -361,11 +364,15 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 				count = count-bytes_read;
 				buf = buf+bytes_read; /*set new offset just after wrote data*/
 			}
-			else
+			else{
+				__bytes_recv += bytes_read;
 				return bytes_read;
+			}
 		}
-		else
+		else{
+			__bytes_recv += bytes_read;
 			return bytes_read;
+		}
 	}
 	int bytes = 0;
 	if ( sockf->netw_socket ){
@@ -397,6 +404,7 @@ ssize_t read_sockf(struct sock_file_t *sockf, char *buf, size_t count){
 			}
 		}while(bytes_read+bytes < count);
 	}
+	__bytes_recv += bytes_read+bytes;
 	return bytes_read+bytes;
 }
 

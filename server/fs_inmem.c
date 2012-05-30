@@ -43,7 +43,7 @@ int callback_add_dir(const char *dirpath, int len){
 	if ( !len ) return -1;
 	struct file_info_array_t *fs_struct = __fs->fs_structure;
 	int found = 0;
-	if ( fsfile_by_path(fs_struct, dirpath) )
+	if ( fsfile_by_path(fs_struct, dirpath, len) )
 		found=1;
 	/*if dir path not found then add it*/
 	if ( !found ){
@@ -64,8 +64,11 @@ int callback_add_dir(const char *dirpath, int len){
 		struct file_info_t *finfo = &fs_struct->array[fs_struct->count++];
 		memcpy( copypath, dirpath, len );
 		copypath[len] = '\0';
+		finfo->fd = -1;
 		finfo->path = copypath;
 		finfo->access_mode = S_IFDIR|ACS_ALLREAD|ACS_ALLWRITE;
+		WRITE_FMT_LOG(LOG_DEBUG, "added dir, number=%d, fd=%d, path=%s",
+				fs_struct->count-1, finfo->fd, finfo->path );
 		return 0;
 	}
 	else
@@ -97,8 +100,7 @@ void
 fill_fsstructure_by_records( struct file_info_array_t **fs_structure, struct db_records_t *db_records){
 	assert(db_records);
 	*fs_structure = malloc(sizeof(struct file_info_array_t));
-	(*fs_structure)->maxcount = (*fs_structure)->count = 0;
-	(*fs_structure)->array = NULL;
+	memset(*fs_structure, '\0', sizeof(struct file_info_array_t));
 	/*add db_records to fs_tructure*/
 	for ( int i=0; i < db_records->count; i++ ){
 		struct db_record_t* dbrecord = &db_records->array[i];
@@ -106,7 +108,7 @@ fill_fsstructure_by_records( struct file_info_array_t **fs_structure, struct db_
 		process_subdirs_via_callback(callback_add_dir, dbrecord->fpath, strlen(dbrecord->fpath));
 		/*check path, do not allow duplicates filenames*/
 		int found = 0;
-		if ( fsfile_by_path(*fs_structure, dbrecord->fpath) )
+		if ( fsfile_by_path(*fs_structure, dbrecord->fpath, strlen(dbrecord->fpath)))
 			found=1;
 		/*add unique filename*/
 		if ( !found ){
@@ -131,6 +133,8 @@ fill_fsstructure_by_records( struct file_info_array_t **fs_structure, struct db_
 				fsfile->access_mode = S_IFREG|ACS_ALLREAD;
 			else
 				fsfile->access_mode = S_IFREG|ACS_ALLWRITE;
+			WRITE_FMT_LOG(LOG_DEBUG, "fsfile number=%d, fd=%d, mode=%d, path=%s",
+					(*fs_structure)->count-1, fsfile->fd, fsfile->access_mode, fsfile->path );
 		}
 	}
 	return;
@@ -188,12 +192,13 @@ int check_access_mode( int allowed_chmod, int fuse_wanted_chmod ){
 }
 
 struct file_info_t *
-fsfile_by_path(struct file_info_array_t *array, const char *path){
+fsfile_by_path(struct file_info_array_t *array, const char *path, size_t len){
 	assert(array);
 	struct file_info_t *finfo = NULL;
 	for( int i=0; i < array->count; i++ ){
 		finfo = &array->array[i];
-		if ( ! strcmp(path, finfo->path) ) return finfo;
+		/*if path matched*/
+		if ( ! strncmp(path, finfo->path, len) ) return finfo;
 	}
 	return NULL;
 }
@@ -210,7 +215,7 @@ static int zvm_getattr(const char *path, struct stat *stbuf)
 	WRITE_FMT_LOG(LOG_DEBUG, "getattr_path=%s", path);
 	memset(stbuf, 0, sizeof(struct stat));
 
-	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
+	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path, strlen(path));
 	if ( finfo ){
 		stbuf->st_ino = finfo->fd;
 		stbuf->st_mode = finfo->access_mode;
@@ -352,7 +357,7 @@ static int zvm_truncate(const char *path, off_t size)
 	WRITE_FMT_LOG(LOG_DEBUG, "%s path=%s, size=%d\n", __func__, path, (int)size );
 
 	assert(__fs);
-	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
+	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path, strlen(path));
 	if ( finfo ){
 		return 0;
 	}
@@ -372,7 +377,7 @@ static int zvm_utimens(const char *path, const struct timespec ts[2])
 
 static int zvm_open(const char *path, struct fuse_file_info *fi)
 {
-	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
+	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path, strlen(path));
 	if ( finfo ){
 		WRITE_FMT_LOG(LOG_DEBUG, "zvm_open %s", path );
 		if ( sockf_by_fd( __zmq_pool, finfo->fd) ) return 0; /*already opened socket*/
@@ -401,7 +406,7 @@ static int zvm_read(const char *path, char *buf, size_t size, off_t offset,
 {
 	if ( !fi) return -EINVAL;
 	assert(__fs);
-	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
+	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path, strlen(path));
 	if ( finfo ){
 		if ( !check_access_mode(finfo->access_mode, fi->flags) ){
 			int fd = finfo->fd;
@@ -435,7 +440,7 @@ static int zvm_write(const char *path, const char *buf, size_t size,
 	WRITE_FMT_LOG(LOG_DEBUG, "path=%s, size=%d, off_t=%d", path, (int)size, (int)offset );
 	if ( !fi ) return -EINVAL;
 	assert(__fs);
-	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
+	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path, strlen(path));
 	if ( finfo ){
 		if ( !check_access_mode(finfo->access_mode, fi->flags) ){
 			int fd = finfo->fd;
@@ -471,7 +476,7 @@ static int zvm_statfs(const char *path, struct statvfs *stbuf){
 }
 
 static int zvm_release(const char *path, struct fuse_file_info *fi){
-	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path);
+	struct file_info_t *finfo = fsfile_by_path(__fs->fs_structure, path, strlen(path));
 	if ( finfo ){
 		struct sock_file_t *sockf = sockf_by_fd( __zmq_pool, finfo->fd);
 		 /*find opened socket*/

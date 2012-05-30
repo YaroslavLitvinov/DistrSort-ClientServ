@@ -45,6 +45,7 @@ int main(int argc, char *argv[]){
 	memset(crc_array, '\0', SRC_NODES_COUNT*sizeof(uint32_t));
 	struct file_record_t* crc_read_r = match_file_record_by_fd( &file_records, MANAGER_FD_READ_CRC);
 	assert(crc_read_r);
+	WRITE_FMT_LOG(LOG_DEBUG, "open crc reading fd=%d", MANAGER_FD_READ_CRC);
 	read_crcs(crc_read_r->fpath, crc_array);
 	/*crc read ok*/
 
